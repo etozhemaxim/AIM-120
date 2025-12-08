@@ -24,7 +24,6 @@
 \usepackage{caption}
 \usepackage{subfiles}
 \usepackage{tabto}
-\usepackage{yfonts}
 \usepackage{textgreek}
 
 \input{textgreek}
@@ -464,7 +463,7 @@ k_{\alpha \alpha_{\text{теор}}} = (1 + 0.41 \cdot \bar{D})^2 = (1 + 0.41 \cd
 K_{\alpha \alpha_{\text{теор}}} = (1 + \bar{D})^2 = (1 + 0.6952)^2 = 2.8737
  \]
 
-\section{Расчёт $c^\alpha_y$}
+\section{Расчёт $c_y$}
 
 \subsection{Фезюляж}
 
@@ -505,12 +504,12 @@ c_{y\text{ф}}^{\alpha} = c_{y\text{нос+цил}}^{\alpha} + c_{y\text{кор�
 \( c_{y\text{корм}}^{\alpha} \) -- производная \( c_{y\text{ф}}^{\alpha} \) кормовой части фюзеляжа.
 
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.7\textheight]{images/C_y_iz.f_V2.png}
-\caption{График зависимости $c_{y\text{из.ф}}$}
-\label{C_y_iz.f_V2}
-\end{figure}
+% \begin{figure}[H]
+% \centering
+% \includegraphics[width=0.7\textheight]{images/C_y_iz.f_V2.png}
+% \caption{График зависимости $c_{y\text{из.ф}}$}
+% \label{C_y_iz.f_V2}
+% \end{figure}
 
 \subsection{Крылья}
 
@@ -855,10 +854,32 @@ S_\text{рл} = 4 \cdot 1/2 \cdot  (0.316 + 0.011 ) \cdot 0.231  = 0.15107 {\tex
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.65\textheight]{images/с_alpha_y_true.png}
-\caption{Зависимость $c^\alpha_y$ от $\text{М}$ и $\alpha$}
+\includegraphics[width=0.65\textheight]{images/с_y_small_angles_d15.png}
+\caption{Зависимость $c_y$ от $\text{М}$ и $\alpha$ при $\delta_{II} = 15$}
 \label{с_alpha_y_true}
 \end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textheight]{images/с_y_small_angles_d-15.png}
+\caption{Зависимость $c_y$ от $\text{М}$ и $\alpha$ при $\delta_{II} = -15$}
+\label{с_alpha_}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textheight]{images/с_y_big_angles_1.png}
+\caption{Зависимость $c_y$ от $\text{М}$ и $\alpha \in [-25;+25]$ при $\delta_{II} = -15$}
+\label{с_alpha_}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textheight]{images/с_y_big_angles_2.png}
+\caption{Зависимость $c_y$ от $\text{М}$ и $\alpha \in [-25;+25]$ при $\delta_{II} = -15$}
+\label{с_alpha_}
+\end{figure}
+
 
 \section{Расчёт $c_x$}
 
@@ -870,6 +891,38 @@ S_\text{рл} = 4 \cdot 1/2 \cdot  (0.316 + 0.011 ) \cdot 0.231  = 0.15107 {\tex
 \caption{Зависимость $c_{x0}$ от $\text{М}$}
 \label{с_x_0_par}
 \end{figure}
+
+\subsection{Итоги параграфа}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textheight]{images/c_x.png}
+\caption{Зависимость $c_x$ от $\text{М}$}
+\label{с_x_0_par}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textheight]{images/c_x_1.png}
+\caption{Зависимость $c_x$ от $\text{М}$}
+\label{с_x_0_par}
+\end{figure}
+
+\section{Расчёт $m_z$}
+
+\subsection{Расчёт фокусов}
+\Large {\textbf{In progress...}}
+\subsection{Итоги параграфа}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textheight]{images/m_z.png}
+\caption{Зависимость $m_z$ от $\alpha$}
+\label{с_x_0_par}
+\end{figure}
+\chapter{Обратная задача аеродинамики}
+
+\Large {\textbf{In progress...}}
 
 \newpage
 \begin{thebibliography}{9}
