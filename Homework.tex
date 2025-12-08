@@ -1,0 +1,882 @@
+\documentclass[a4paper,12pt]{extreport}
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage{geometry}
+\usepackage{float}
+\usepackage{ulem}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{siunitx}
+\usepackage{indentfirst}
+\usepackage{placeins}
+\usepackage{lipsum}
+\usepackage{longtable}
+\usepackage{csquotes}
+\usepackage[style=gost-numeric,sorting=none]{biblatex}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{subfiles}
+\usepackage{tabto}
+\usepackage{yfonts}
+\usepackage{textgreek}
+
+\input{textgreek}
+
+\input{textgreek}
+\captionsetup[table]{position=top, singlelinecheck=false, justification=raggedleft}
+
+
+\addbibresource{references.bib}
+\usepackage{titlesec}
+\titleformat{\chapter}[display]
+    {\normalfont\huge\bfseries}
+    {\chaptertitlename\ \thechapter}
+    {20pt}
+    {\Huge}
+\usepackage{booktabs}
+\usepackage{makecell}
+\graphicspath{{Image/}}
+
+\geometry{
+    a4paper,
+    total={170mm,257mm},
+    left=20mm,
+    top=20mm,
+}
+
+\newcommand{\specialcell}[2][c]{%
+    \begin{tabular}[#1]{@{}c@{}}#2\end{tabular}%
+}
+
+\usepackage{etoolbox}
+\patchcmd{\thebibliography}
+  {\chapter*{\bibname}}
+  {\section*{\centering СПИСОК ЛИТЕРАТУРЫ}}
+  {}{}
+\patchcmd{\thebibliography}
+  {\addcontentsline{toc}{chapter}{\bibname}}
+  {\addcontentsline{toc}{section}{СПИСОК ЛИТЕРАТУРЫ}}
+  {}{}
+
+
+\usepackage{setspace}
+\onehalfspacing
+
+
+\begin{document}
+
+\subfile{titul.tex}
+
+\subfile{titul2.tex}
+
+\tableofcontents
+
+\newpage
+\chapter*{Принятые сокращения}
+\begin{description}[font=\normalfont] 
+\item[WDU] — Weapons Detonation Unit (блок подрыва боевой части)
+\item[WGU] — Weapons Guidance Unit (блок наведения вооружения)
+\item[WPU] — Weapons Propulsion Unit (двигательный отсек вооружения)
+\item[ICPU] — Integrated Control and Power Unit (встроенный блок управления и питания)
+\item[РДТТ] — ракетный двигатель твердого топлива
+\item[БЧ] — боевая часть
+\end{description}
+
+
+\newpage
+\chapter{Краткие сведения о прототипе}
+\section{Обзор прототипа}
+Ракета AIM-120A AMRAAM (Advanced Medium-Range Air-to-Air Missile –усовершенствованная ракета класса «воздух-воздух»  средней дальности) выполнена по нормальной аэродинамической схеме с «Х» – образным расположением консолей крыла и рулей.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.7\textheight]{images/1.jpg}
+\caption{Ракета AIM-120 AMRAAM}
+\label{AIM-120}
+\end{figure}
+
+\newpage
+\section{Внешнее описание}
+Ракета цилиндрическая, длинная, со стреловидным обтекателем.
+Носовая часть имеет длину 18.5 дюймов и окрашена в белый цвет. Далее расположена секция батарей серого цвета длиной 17.5 дюймов. Имеется желтая и чёрная полоса с надписью «Осторожно — Используйте защитный чехол для обтекателя».
+Следом идет неокрашенная серая секция управления (WCU) длиной 18.75 дюймов. За ней расположена секция БЧ (WDU), длиной 9.5 дюймов, темно-серого цвета.
+Эта секция снизу переходит в более светло-серую секцию РДТТ (WPU) длиной 74.75 дюймов. На ней в верхней части расположена черная и синяя полосы, обозначающие, что это учебный снаряд.
+За секцией РДТТ находится секция управления рулями длиной 14.75 дюймов. Рули длинные, частично треугольной формы с прямым краем сверху. На них наклеены красно-белые полосы и нанесены номера.
+Передние крылья также имеют наклейки и номера. Они алюминиевые, треугольной формы. На ракете присутствуют ушки для крепления к пилону.
+
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.55\textheight]{images/2.jpg}
+\caption{Ракета AIM-120 AMRAAM}
+\label{AIM-120}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.6\textheight]{images/3.jpg}
+\caption{Размеры отсеков в миллиметрах}
+\label{AIM-120}
+\end{figure}
+
+\newpage
+\section{Внутрення компоновка}
+На рисунке 1.4 представлена внутрення компоновка AIM-120, перевод названий модулей дан ниже.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.7\textheight]{images/4.jpg}
+\caption{Компоновка ракеты AIM-120}
+\label{AIM-120}
+\end{figure}
+
+\begin{description}[font=\normalfont\itshape] % обычный шрифт + курсив
+\item[Antenna] — антенна головки самонаведения
+\item[(Thermal) batteries] — пиротехнические баратареи, часть ICPU
+\item[Transmitter] — передатчик, излучатель
+\item[Electronics] — электроника 
+\item[Inertial Reference Unit (IRA)] — инерциальная система наведения 
+\item[Target Detecting Device (TDD)] — устройство обнаружения цели
+\item[Armament Section] — боевая часть 
+\item[Rocket Motor] — РДТТ
+\item[Contol Actuator] — рулевая машинка
+\item[Data Link] — канал передачи данных 
+\end{description}
+
+Ниже на рисунке 1.5 представлено разбиение компоновки ракеты на 4 отсека в соответсвии с требованиями ДЗ.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textheight]{images/5.jpg}
+\caption{Схема разбиения компоновки ракеты}
+\label{AIM-120}
+\end{figure}
+
+\chapter{Массовый анализ}
+\section{Расчёт масс отсеков из размеров ракеты}
+Расчёт основан на имеющихся данных о массе ракеты, её боевой части из открытых источников. Масса РДТТ бралась из ДЗ по ПрРО предыдущего семестра. Масса остальных отсеков будет найдена
+с помощью установленных зависимостей из [1].
+
+Общая масса ракеты — 161.5 кг, масса БЧ — 22 кг. Масса РДТТ — 49.37 кг.
+
+\begin{tabular}{ll}
+    \textbf{Дальность}: & 35 морских миль (64.82 км); \\
+    \textbf{Скорость}: & 4 Маха; \\
+    \textbf{Максимальная длина}: & 12.19 футов (3.717 м); \\
+    \textbf{Калибр}: & 0.58 футов (0.178 м).
+\end{tabular}
+
+Первый шаг заключается в расчете общего объема ракеты на основе
+указанных выше длины и калибра по следующей формуле
+
+\[V = \frac{\pi D^2 L}{4} = \frac{\pi (0.58)^2 \cdot 12.19}{4} = \SI{3.22}{ft^3}\]
+
+Для того что
+бы получить оценочное значение массы, выбирается уравнение 4 из анализа общей массы УРВВ:
+\[W = 142.2\cdot(V)^{0.74},\]
+\[W = 142.2 \cdot (3.22)^{0.74} = 337.84\text{ фунтов}(153.24\text{ кг})\] 
+
+Данное оценочное значение может быть проверено с помощью уравнения 17, разработанного для ракет средней дальности:
+
+\[ W = 177.5\cdot(V)^{0.73} \]
+
+\[ W = 177.5\cdot(3.38)^{0.73} = 416.93 \text{ фунтов}(189.11\text{ кг}) \]
+
+ Поскольку полученные значения отличаются, проводится сравнение со
+ответствия для каждого из них. Выбирается уравнение 4, по причине более высокого значения R — квадрат. Таким образом, значение массы при
+ начальной оценке равно 350.18 фунтов (158.83 кг). Следовательно, при из
+вестных массе и объеме общая плотность изделия может быть рассчитана
+ с помощью уравнений:30,
+
+
+\[ \textit{DENS} = \frac{\textit{W}}{\textit{V}} \]
+
+\[ \textit{DENS} = 104.91 \, \frac{\text{фунтов}}{\text{фут}^3} . \]
+
+Затем вводятся уравнения, разработанные для масс отсеков с параметрами, которые были выведены и оценены. Во-первых, масса отсека ДУ
+может быть оценена с помощью уравнения 77:
+
+\[ \textit{PWt} = -284.9 + 633.6(D) - 0.105(W) + 0.949(\textit{DENS}); \]
+\[ \textit{PWt} = -284.9 + 633.6(0.58) - 0.105(337.84) + 0.949(104.91) = 146.67 \text{ фунтов}(66.52 \text{ кг})\]
+
+
+Данное значение проверяется уравнением 82:
+
+\[ \textit{PWt} = 1548.0 - 43.7(L) - 1253.9(D) + 1.4(W) - 6.0(\textit{DENS}); \]
+\[ \textit{PWt} = 1548.0 - 43.7(12.19) - 1253.9(0.58) + 1.4(337.84) - 6.0(104.91) = 131.551 \text{ фунтов}(59.67 \text{ кг}) \]
+
+Эти уравнения дали большое расхождение. Так как уравнение
+82 имеет лучшее соответствие значению массы РДТТ из ДЗ, для определения
+массы отсека ДУ будет использоваться значение 131.551 фунтов (59.67).
+
+ Масса и размер отсека наведения и управления будут оценены анало
+гичным образом: оценка массы отсека будет получена из уравнения 85:
+
+\[ GCWt = 117.6(D) + 1.6(R) - 0.14(\textit{DENS}); \]
+\[ GCWt = 117.6(0.58) + 1.6(35) - 0.14(104.91) = 109.52 \text{ фунтов}( 49.67\text{ кг}) \]
+
+
+Теперь определим массу и размеры отсека боевой части. Для оценки массы используем уравнение 93:
+
+\[ WHWt = 0.1(DENS) - 0.2(R) + 0.2(W) - 2.4(L); \]
+\[ WHWt = 0.1(104.91) - 0.2(35) + 0.2(337.84) - 2.4(12.81) = 40.315 \text{ фунтов}( 18.28\text{ кг}) \]
+
+
+Масса рулевого отсека будет рассчитана из общей массы ракеты:
+
+\[
+ROW = Wt - GCWt - PWt - WHWt = 337.84  - 109.52 - 131.551 - 40.315 = 56.454 \, \text{ фунтов}( 25.60\text{ кг})
+\]
+
+Итого: 
+\captionsetup[table]{position=top, singlelinecheck=false, justification=raggedleft}
+\begin{table}[H]
+\caption{Результаты анализа}
+\label{tab:three_columns}
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Отсек} & \textbf{Имеющиеся данные, кг} & \textbf{Регрессионный анализ, кг} \\
+\hline
+БЧ & 22 & 18.28 \\
+\hline
+РДТТ & 49.37 & 59.67 \\
+\hline
+Блок управления & - & 49.67 \\
+\hline
+Рулевой отсек & - & 25.60 \\
+\hline
+Общая масса ракеты & 161.5 & 153.22 \\
+\hline
+\end{tabular}
+\end{table}
+
+Примем реальное значение боевой части, массу РДТТ  возьмем из ДЗ, а массу блока управления и рулевого отсека возьмём из регрессонного анализа. Тогда:
+
+\captionsetup[table]{position=top, singlelinecheck=false, justification=raggedleft}
+
+\begin{table}[H]
+\caption{Принятые массы}
+\centering
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Отсек} & \textbf{Масса отсека, кг} \\
+\hline
+БЧ & 22 \\
+\hline
+РДТТ & 49.37\\
+\hline
+Блок управления & 49.67\\
+\hline
+Рулевой отсек & 25.60 \\
+\hline
+Общая масса ракеты & 146.64 \\
+\hline
+\end{tabular}
+\label{tab:three_columns}
+\end{table}
+
+\section{Расчёт плотностей отсеков}
+
+Расчёт будет производиться по формуле:
+
+\[ \rho = \frac{m}{V}, \quad \left[\frac{\text{кг}}{\text{м}^3}\right] \]
+
+Но сначала необходимо высчитать объемы отсеков по формуле: 
+
+\[V = \frac{\pi D^2 L}{4} \]
+
+1) Объём боевой части:
+
+\[V_{\text{БЧ}} = \frac{\pi (0.178)^2 \cdot 0.241}{4} = 0.0059{\text{ м}^3} \]
+
+2) Объём РДТТ:
+
+\[V_{\text{РДТТ}} = \frac{\pi (0.178)^2 \cdot 1.716}{4} = 0.042{\text{ м}^3} \]
+
+3) Объём блока управления:
+
+\[V_{\text{БУ}} = \frac{\pi (0.178)^2 \cdot 0.921}{4} = 0.0229{\text{ м}^3} \]
+
+4) Объём рулевого отсека(блока рулей):
+
+\[V_{\text{БР}} = \frac{\pi (0.178)^2 \cdot 0.375}{4} = 0.0093{\text{ м}^3} \]
+
+Плотности:
+
+1) Плотность боевой части:
+
+\[ \rho_{\text{БЧ}} = \frac{22}{0.0059} = 3728.81 \quad \left[\frac{\text{кг}}{\text{м}^3}\right]\]
+
+2) Плотность РДТТ:
+
+\[ \rho_{\text{РДТТ}} = \frac{49.37}{0.042} = 1175.47 \quad \left[\frac{\text{кг}}{\text{м}^3}\right]\]
+
+3) Плотность блока управления:
+
+\[ \rho_{\text{БУ}} = \frac{49.67}{0.0299} = 1661.2 \quad \left[\frac{\text{кг}}{\text{м}^3}\right]\]
+
+4) Плотность рулевого отсека (блока рулей):
+
+\[ \rho_{\text{БР}} = \frac{25.60}{0.0093} = 2752.68 \quad \left[\frac{\text{кг}}{\text{м}^3}\right]\]
+
+
+\chapter{Расчёт центра масс}
+
+\section{Построение 3D модели}
+
+Для построения 3D модели используем САПР Компас 3D. Каждый отсек ракеты мо-
+делируем отдельно и указываем его плотность и массу. Создаём сборку (рис. 3.1) с полной
+массой топлива и без топлива и смотрим на свойства модели.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.65\textheight]{images/6.jpg}
+\caption{Сборка ракеты в САПР Компас 3D}
+\label{AIM-120}
+\end{figure}
+
+\section{Вычисление центра масс}
+
+Вычисление проводилось с помощью САПР Компас 3D. Результаты приведены в таблице 3.1.
+
+
+\begin{table}[h]
+\caption{Координаты центра масс до и после работы двигателя}
+\label{tab:four_columns}
+\centering
+\begin{tabular}{|p{0.2\textwidth}|p{0.2\textwidth}|}
+\hline
+\textbf{Состояние топливного заряда} & \textbf{x, мм} \\
+\hline
+Полная загрузка топлива &  2103.12 \\
+\hline
+Топливо отсутствует & 1914.05 \\
+\hline
+\end{tabular}
+\end{table}
+
+\newpage
+Зависимость положения центра тяжести от времени x(t) будет выглядеть так: 
+
+\[x = -11.816\cdot t + 2103.12 \]
+
+Стоить отметить, что время горения шашки твердового топлива составляет 16 секунд (данные из ДЗ по ПрРО за прошлый семестр).
+
+Разбежка центра тяжести составила:
+
+\[ \varDelta_{\text{цт}} = \varDelta_{\text{цт2}} - \varDelta_{\text{цт1}} = 2103.12 - 1914.05 = 189.07{\text{ мм}} \]
+
+Относительная разбежка центра тяжести составила:
+
+\[
+\frac{|\varDelta_{\text{цт}}|}{L_{\varSigma}} \cdot 100\% = \frac{|189.07{\text{ мм}}|}{3717{\text{ мм}}} \cdot 100\% = 5.08\%
+\]
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.65\textheight]{images/7.jpg}
+\caption{Эскиз ракеты с координатами центров масс}
+\label{AIM-120}
+\end{figure}
+
+\chapter{Аеродинамические характеристики}
+
+\section{Некоторые пояснения}
+
+В зависимости от связанной или скоростной системы координат расчёт $c_y$ производится по формулам \ref{eq:cy_formula1} и \ref{eq:cy_formula2} соответственно.
+
+\begin{equation}    
+\label{eq:cy_formula1}
+c_y = c_{y_0} + c_{y_a}^\alpha \cdot \alpha + c_{y_a}^{\delta_\mathrm{I}} \cdot \delta_\mathrm{I} + c_{y_a}^{\delta_\mathrm{II}} \cdot \delta_\mathrm{II},
+\end{equation}
+
+\begin{equation}
+\label{eq:cy_formula2}
+c_y = c_{y_10} + c_{y_1}^\alpha \cdot \alpha + c_{y_1}^{\delta_\mathrm{I}} \cdot \delta_\mathrm{I} + c_{y_1}^{\delta_\mathrm{II}} \cdot \delta_\mathrm{II},
+\end{equation}
+
+где $\alpha$ -- угол атаки (в радианах), $c_{y_0}$ и $c_{y_10}$ -- значения $c_y$ и $c_{y1}$ при $\alpha = \delta_\mathrm{I} =  \delta_\mathrm{II} = 0$, $c_{y}^\alpha, c_{y}^{\delta_\mathrm{I}},c_{y}^{\delta_\mathrm{II}},c_{y_1}^\alpha,c_{y_1}^{\delta_\mathrm{I}},c_{y_1}^{\delta_\mathrm{II}}$ -- частные производные коэффицентов $c_y$ или
+$c_{y1}$ по углам $\alpha, \delta_\mathrm{I}$ и $\delta_\mathrm{II} $, взятые $\alpha = \delta_\mathrm{I} =  \delta_\mathrm{II} = 0$.
+
+Данное соотношение справедливо для линейного диапазона, т.е. $\sin(\alpha) \approx \alpha$.
+
+
+Некоторые вводные данные представлены в таблице \ref{tab:geometry}.
+
+\begin{table}[h]
+\centering
+\caption{Геометрические параметры летательного аппарата}
+\label{tab:geometry}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Параметр} & \textbf{Значение} & \textbf{Единица измерения} \\ 
+\hline
+Диаметр миделя $D$ & 0.178 & м \\
+\hline
+Диаметр в области передних консолей $D_I$ & 0.178 & м \\
+\hline
+Диаметр в области задних консолей $D_{II}$ & 0.178 & м \\
+\hline
+Относительный диаметр корпуса $\bar{D}$ & 0.6952 & -- \\
+\hline
+Длина фюзеляжа $l_f$ & 3.906 & м \\
+\hline
+Длина носовой части $l_\text{nos}$ & 0.47 & м \\
+\hline
+Длина кормовой части $l_{korm}$ & 0.375 & м \\
+\hline
+Площадь миделя $S_m$ & 0.02488 & м\textsuperscript{2} \\
+\hline
+Размах крыла $l_I$ & 0.484 & м \\
+\hline
+Размах руля $l_{II}$ & 0.5808 & м \\
+\hline
+\end{tabular}
+\end{table}
+
+Относительный диаметр корпуса $\bar{D}$:
+
+\[ 
+\bar{D} = \frac{D}{l_f} = \frac{0.178}{3.906} = 0.6952 
+ \]
+
+Площадь миделя $S_m$:
+
+\[ 
+S_m = \frac{\pi D^2}{4} = \frac{\pi 0.178^2}{4} = 0.02488{\text{ м}^2}
+ \]
+          
+Коэффициенты интерференции рассчитываются по следующим формулам:
+
+\[ 
+k_{\alpha \alpha_{\text{теор}}} = (1 + 0.41 \cdot \bar{D})^2 = (1 + 0.41 \cdot 0.6952)^2 = 1.6513
+\]
+
+\[ 
+K_{\alpha \alpha_{\text{теор}}} = (1 + \bar{D})^2 = (1 + 0.6952)^2 = 2.8737
+ \]
+
+\section{Расчёт $c^\alpha_y$}
+
+\subsection{Фезюляж}
+
+При малых углах атаки, на участке линейной зависимости, коэффициент подъемной силы фюзеляжа можно представить в виде:
+
+\[
+c_{y_{a}\text{ф}}= c_{y_{a}\text{ф}}^{\alpha} \cdot \alpha
+\]
+
+Коэффициент нормальной силы фюзеляжа при безотрывном обтекании определяется:
+
+\[
+c_{y\text{ф}} = c_{y\text{ф}}^{\alpha} \cdot \sin \alpha \cos \alpha
+\]
+
+Для малых углов атаки можно считать что
+
+\[
+c_{y_{a}\text{ф}} = c_{y\text{ф}} \cos \alpha = c_{y\text{ф}}^{\alpha} \cdot \sin \alpha \cos^{2} \alpha,
+\]
+
+где можно принять \(\sin \alpha \approx \alpha\), \(\cos \alpha \approx 1\).
+
+Тогда
+
+\[
+c_{y_{a}\text{ф}}^{\alpha} \cdot \alpha = c_{y\text{ф}}^{\alpha} \cdot \alpha \quad \text{и} \quad c_{y_{a}\text{ф}}^{\alpha} = c_{y\text{ф}}^{\alpha}
+\]
+
+Производная \( c_{y\text{ф}}^{\alpha} \) зависит от формы фюзеляжа и задается для эквивалентного тела вращения как:
+
+\[
+c_{y\text{ф}}^{\alpha} = c_{y\text{нос+цил}}^{\alpha} + c_{y\text{корм}}^{\alpha}
+\]
+
+где \( c_{y\text{нос+цил}}^{\alpha} \) -- производная \( c_{y\text{ф}}^{\alpha} \) носовой части фюзеляжа с учетом интерференции с цилиндрической частью;
+
+\( c_{y\text{корм}}^{\alpha} \) -- производная \( c_{y\text{ф}}^{\alpha} \) кормовой части фюзеляжа.
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textheight]{images/C_y_iz.f_V2.png}
+\caption{График зависимости $c_{y\text{из.ф}}$}
+\label{C_y_iz.f_V2}
+\end{figure}
+
+\subsection{Крылья}
+
+Вводные данные представлены в таблице \ref{tab:wing}.
+
+\begin{table}[h]
+\centering
+\caption{Вводные параметры}
+\label{tab:wing}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Параметр} & \textbf{Значение} & \textbf{Единица измерения} \\ 
+\hline
+Размах крыла $l_I$ & 0.498 & м \\
+\hline
+Полуразмах крыла $l_I$/2 & 0.249 & м \\
+\hline
+Центральная хорда $b_0$ & 0.311& м\\
+\hline
+Бортовая хорда $b_\text{б}$ & 0.2 & м\\
+\hline
+Угол стреловидности по линии середин хорд $\chi_{0.5}$ & 0.510 & рад\\
+\hline
+Угол стреловидности $\chi$ & 0.896 & рад\\
+\hline
+Толщина профиля крыла $c$ & 0.004 & м\\
+\hline
+Обратное сужение крыла $\zeta$ & 5 & - \\
+\hline
+\end{tabular}
+\end{table}
+
+Относительная толщина профиля крыла $\bar{c}$ вычисляется по формуле \ref{c_bar}:
+
+\begin{equation}
+\label{c_bar}
+\bar{c} = \frac{c}{D} = \frac{0.004}{0.178} = 0.224
+\end{equation}
+
+Площадь крыла $S_\text{кр}$ вычисляется по формуле \ref{S_kr}:
+
+\begin{equation}
+\label{S_kr}
+S_\text{кр} = 4 \cdot \frac{l}{2} \cdot b_\text{б} \cdot 0.5 = 4 \cdot 0.249 \cdot 0.2 \cdot 0.5 = 0.0996 {\text{ м}^2}
+\end{equation}
+
+Удлинение крыла $\lambda_\text{кр}$ определяется по формуле \ref{lambda_kr}:
+
+\begin{equation}
+\label{lambda_kr}
+\lambda_\text{кр} = \frac{l^2}{S_\text{кр}} = \frac{0.498^2}{0.0996} = 2.49
+\end{equation}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\textheight]{images/wing.png}
+\caption{Схема крыла AIM-120}
+\label{wing}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textheight]{images/C_y_iz.kr.png}
+\caption{График зависимости $c_{y\text{из.кр}}$}
+\label{C_y_iz.kr}
+\end{figure}
+
+Взаимное влияние несущей поверхности с фюзеляжем определяется коэффициентом интерференции $K_{\alpha \alpha}$. При этом при $M\geq 1$ данный коэффицент определяется зависимостью \ref{K_aa}.
+
+\begin{equation}
+\label{K_aa}
+K_{\alpha \alpha} = \left[ k^*_{\alpha \alpha} + (K^*_{\alpha \alpha} - k^*_{\alpha \alpha}) F(L_{\text{хв}}) \right] x_{\text{п.с}} x_{\text{М}} x_{\text{нос}},
+\end{equation}
+где 
+\begin{equation}
+k^*_{\alpha \alpha} = (K_{\alpha \alpha})_{\text{теор}} \frac{1 + 3\bar{D} -1 \frac{1}{\eta_\text{к}}\bar{D}(1-\bar{D})}{(1 + \bar{D})^2}
+\end{equation}
+
+\begin{equation}
+K^*_{\alpha \alpha} = 1 + 3\bar{D} -1 \frac{\bar{D}(1-\bar{D})}{\eta_\text{к}}
+\end{equation}
+
+\begin{equation}
+F(L_{\text{хв}}) = 1 - \frac{\sqrt{\pi}}{2\bar{b}_\text{б}\sqrt{2c}} \left[ \Phi [(\bar{b_\text{б}} + \bar{L_\text{хв}}) \sqrt{2c}] - \Phi [\bar{L_\text{xв}} \sqrt{2c}] \right]
+\end{equation}
+
+Здесь $\Phi[z]$ --- функция Лапласа-Гаусса от аргумента $z$, определяемая по таблицам *.
+
+\begin{equation}
+\bar{b}_\text{б} = \frac{b_\text{б}}{\frac{\pi}{2}D \sqrt{M^2-1}}
+\end{equation}
+
+\begin{equation}
+\bar{L}_\text{xв} = \frac{L_\text{xв}}{\frac{\pi}{2}D \sqrt{M^2-1}}
+\end{equation}
+
+
+\begin{equation}
+x_{\text{п.с}} = (1-\frac{2\bar{D}^2}{1-\bar{D}^2}\bar{\delta}^*)\left[  1 - \frac{\bar{D}(\eta_\text{к}-1)}{(1-\bar{D})(\eta_\text{к}+1)}\bar{\delta}^*\right]
+\end{equation}
+
+\begin{equation}
+\bar{\delta}^* = \frac{0.093}{(\frac{V L_1}{\nu})^\frac{1}{5}} \frac{L_1}{D} (1 + 0.4M + 0.147M^2- 0.006M^3),
+\end{equation}
+где $\nu$-- кинематический коэффициент вязкости воздуха.
+
+\begin{equation}
+x_\text{нос} \approx 0.6+0.4(1-e^{-0.5\bar{L}_1})
+\end{equation}
+
+\begin{equation}
+\label{K}
+(K_{\alpha \alpha})_{\text{теор}} = (1 + \bar{D})^2
+\end{equation}
+
+При $M<1$ выражение \ref{K_aa} принимает вид
+\begin{equation}
+K_{\alpha \alpha} = K^*_{\alpha \alpha} x_{\text{п.с}} x_{\text{М}} x_{\text{нос}},
+\end{equation}
+
+Коэффициент $k_{\alpha \alpha}$ во всех случаях подсчитывается по формуле
+
+\begin{equation}
+k_{\alpha \alpha} = k^*_{\alpha \alpha} x_{\text{п.с}} x_{\text{М}} x_{\text{нос}},
+\end{equation}
+
+
+\[
+(K_{\alpha \alpha})_{\text{теор}} = (1 + 0.6952)^2 = 2.873
+\]
+
+Ниже в таблице \ref{M=2} представлены промежуточные результаты некоторых величин для $M=2$.
+
+\begin{table}[h]
+\centering
+\caption{Расчетные параметры интерференции}
+\begin{tabular}{|c|c|}
+\hline
+Величина & Значение \\
+\hline
+$\bar{b}_\text{б}$ & 0.413 \\
+\hline
+$\bar{L}_\text{xв}$ & 3.512 \\
+\hline
+$F(L_{\text{хв}})$ & 0.329 \\
+\hline
+$\bar{\delta}^*$ & 0.039 \\
+\hline
+$x_{\text{п.с}}$ & 0.996 \\
+\hline
+$x_{\text{нос}}$ & 0.982 \\
+\hline
+$k^*_{\alpha \alpha}$ & 1.093 \\
+\hline
+$K^*_{\alpha \alpha}$ & 1.093 \\
+\hline
+$(K_{\alpha \alpha})_{\text{теор}}$ & 2.873 \\
+\hline
+\end{tabular}
+\label{M=2}
+\end{table}
+
+На рисунке \ref{K_aa} представлена зависимость $K_{\alpha \alpha }$ для крыльев от $\text{М}$ И $\alpha$.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textheight]{images/K_aa.png}
+\caption{Зависимость $K_{\alpha \alpha \text{кр}}$ от $\text{М}$ и $\alpha$}
+\label{K_aa}
+\end{figure}
+
+\subsection{Рули}
+
+Вводные данные представлены в таблице \ref{tab:fins}.
+
+\begin{table}[h]
+\centering
+\caption{Вводные параметры}
+\label{tab:fins}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Параметр} & \textbf{Значение} & \textbf{Единица измерения} \\ 
+\hline
+Размах руля $l_{I\text{рл}}$ & 0.651 & м \\
+\hline
+Полуразмах руля $l_{I\text{рл}}/2$ & 0.325 & м \\
+\hline
+Центральная хорда $b_{0\text{рл}}$ & 0.4& м\\
+\hline
+Бортовая хорда $b_{б\text{рл}}$ & 0.316 & м\\
+\hline
+Концевая хорда $b_\text{к}$ & 0.011 & м\\
+\hline
+Угол стреловидности по линии середин хорд $\chi_{0.5\text{рл}}$ & 0.420 & рад\\
+\hline
+Угол стреловидности $\chi_\text{рл}$ & 0.729 & рад\\
+\hline
+Толщина профиля руля $c_\text{рл}$ & 0.004 & м\\
+\hline
+Обратное сужение руля $\zeta_\text{рл}$ & 5 & - \\
+\hline
+\end{tabular}
+\end{table}
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.55\textheight]{images/fins.png}
+\caption{Схема рулей AIM-120}
+\label{fins}
+\end{figure}
+
+Площадь рулей $S_\text{рл}$ вычисляется по формуле \ref{S_rl}: 
+
+\begin{equation}
+\label{S_rl}
+S_\text{рл} = 4 \cdot 1/2 \cdot (b_\text{рл} + \cdot b_\text{к}) \cdot 0.231  
+\end{equation}
+
+\[
+S_\text{рл} = 4 \cdot 1/2 \cdot  (0.316 + 0.011 ) \cdot 0.231  = 0.15107 {\text{ м}^2}
+\]
+
+Удлинение крыла $\lambda_\text{рл}$ определяется формулой \ref{zalupa}. 
+
+\begin{equation}
+\label{zalupa}
+\lambda_\text{рл} = \frac{l_\text{рл}^2}{S_\text{рл}} 
+\end{equation}
+
+\[
+\lambda_\text{рл} =  \frac{0.651^2}{0.15107} = 2.805
+\]
+
+На рисунке \ref{C_y_iz.rl} представлена зависимость $c^\alpha_{y\text{из.рл}}$ от $\text{М}$ и $\alpha$.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textheight]{images/C_y_iz.rl.png}
+\caption{График зависимости $c^\alpha_{y\text{из.рл}}$}
+\label{C_y_iz.rl}
+\end{figure}
+
+На рисунке \ref{K_aa_rl} представлена зависимость $K_{\alpha \alpha \text{рл} }$ для крыльев от $\text{М}$ И $\alpha$.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textheight]{images/K_aa_rl.png}
+\caption{Зависимость $K_{\alpha \alpha \text{рл}}$ от $\text{М}$ и $\alpha$}
+\label{K_aa_rl}
+\end{figure}
+
+\subsection{Учёт скоса потока}
+
+Определяя подъемную силу летательного аппарата, необходимо учитывать не только интерференцию корпуса и несущих поверхностей, но и влияние передних поверхностей на задние. Это влияние объясняется тем, что передние несущие поверхности, будучи установлены под углом атаки, отбрасывают набегающие частицы воздуха в сторону, обратную вектору подъёмной силы. В результате происходит изменение направления потока, или \textit{скос потока}.
+
+Поскольку местные углы скоса потока $\epsilon$ неодинаковы вдоль размаха задней несущей поверхности, то целесообразно ввести понятие \textit{среднего угла скоса потока} $\epsilon_{cp}$. Это — условный, постоянный по размаху угол скоса потока, вызывающий тот же эффект, что и действительное поле углов $\varepsilon$.
+
+При малых углах атаки угол $\epsilon_{cp}$ пропорционален $\alpha$:
+
+\begin{equation}
+\epsilon_{cp} \approx \epsilon_{cp}^{\alpha} \alpha.
+\end{equation}
+
+Производная $\epsilon_{cp}^{\alpha}$ определяется выражением
+
+\begin{equation}
+\epsilon_{cp}^{\alpha} = \frac{57.3}{2\pi} \frac{i_\text{В}}{\bar{z}_\text{В}} \frac{l_{kI}}{l_{kII}} \left( \frac{c_{y1\text{из.кр}}^{\alpha}}{\lambda_k} \right)_I \frac{k_{\alpha \alpha I}}{K_{\alpha \alpha II}} \psi_{\varepsilon}.
+\end{equation}
+
+Здесь $\bar{z}_\text{В}$ — относительная координата вихря, т.~е. расстояние от борта корпуса до вихря, отнесенное к размаху одной передней консоли. $l_{kI}$ и $l_{kII}$ -- размах крыльев и рулей соответственно.
+
+Зависимость $\bar{z}_\text{В}$ от $M$ представлена на рисунке \ref{z_v}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textheight]{images/z_v.png}
+\caption{Зависимость $\bar{z}_\text{В}$ от $\text{М}$}
+\label{z_v}
+\end{figure}
+
+Зависимость $i_\text{В}$ от $\text{М}$ представлена на рисунке \ref{i_v}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textheight]{images/i_v.png}
+\caption{ависимость $i_\text{В}$ от $\text{М}$}
+\label{i_v}
+\end{figure}
+
+Зависимость $\psi_\epsilon$ от $\psi_\mathrm{II}$ и $z_\text{В}$ представлена на рисунке \ref{psi_eps_1}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textheight]{images/psi_eps_1.png}
+\caption{Зависимость $\psi_\epsilon$ от $\psi_\mathrm{II}$ и $z_\text{В}$}
+\label{psi_eps_1}
+\end{figure}
+
+Зависимость $\psi_\epsilon$ от $\psi_\mathrm{I}$, $\alpha_\text{п}$, $M$ и $\varphi_\alpha$ представлена на рисунке \ref{psi_eps_2}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.77\textheight]{images/psi_eps_2.png}
+\caption{Зависимость $\psi_\epsilon$ от $\psi_\mathrm{I}$, $\alpha_\text{п}$, $\text{М}$ и $\varphi_\alpha$}
+\label{psi_eps_2}
+\end{figure}
+
+Зависимость $\epsilon^\alpha_\text{ср}$ от $\psi_\mathrm{I}$, $\alpha_\text{п}$, $\text{М}$ и $\varphi_\alpha$ представлена на рисунке \ref{eps_alpha_2}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.77\textheight]{images/eps_alpha_2.png}
+\caption{Зависимость $\epsilon^\alpha_\text{ср}$ от $\psi_\mathrm{I}$, $\alpha_\text{п}$, $\text{М}$ и $\varphi_\alpha$}
+\label{eps_alpha_2}
+\end{figure}
+
+\subsection{Учёт коэффицента торможения потока}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.6\textheight]{images/k_q.png}
+\caption{Зависимость $k_{q \text{из.рл}}$ от $\text{М}$}
+\label{k_q}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.6\textheight]{images/k_q_nos.png}
+\caption{Зависимость $k_{q \text{нос}}$ от $\text{М}$}
+\label{k_q_nos}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textheight]{images/с_alpha_y.png}
+\caption{Зависимость $c^\alpha_{y1}$ от $\text{М}$ и $\alpha$}
+\label{с_alpha_y}
+\end{figure}
+
+\subsection{Итоги параграфа}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textheight]{images/с_alpha_y_true.png}
+\caption{Зависимость $c^\alpha_y$ от $\text{М}$ и $\alpha$}
+\label{с_alpha_y_true}
+\end{figure}
+
+\section{Расчёт $c_x$}
+
+\subsection{Расчёт $c_\text{x0.нос}$ }
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textheight]{images/с_x_0_par.png}
+\caption{Зависимость $c_{x0}$ от $\text{М}$}
+\label{с_x_0_par}
+\end{figure}
+
+\newpage
+\begin{thebibliography}{9}
+\bibitem{} \textbf{Nowell J. B. Jr.} Missile Total and Subsection Weight and Size. June 1992.
+\bibitem{} \textbf{NAVY TRAINING SYSTEM PLAN} AIM-120 ADVANCED MEDIUM RANGE
+ AIR-TO-AIR MISSILE. June 1998.
+\bibitem{} \textbf{Артамонова Л.Г., Кузнецов А.В., Песецкая Н.Н.} Поверочный расчет аэродинамических характеристик самолёта.-- М.: МАИ, 2010. -- 143 с.
+\end{thebibliography}
+
+\end{document}
