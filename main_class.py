@@ -4,6 +4,10 @@ import math
 from dataclasses import dataclass
 from typing import Dict, Tuple, Optional
 
+from atmosphere import atmo
+
+from numba import njit
+
 import numpy as np
 
 # Внешняя библиотека проекта
@@ -1593,6 +1597,187 @@ class Moments:
         return  m_z0 + m_z_a + m_z_deltaI + m_z_deltaII  # (M,A,DI,DII)
 
 
+#================================ СИМУЛЯЦИЯ ПОЛЕТА================================================
+
+@dataclass
+class SimParams:
+        dt: float      = 0.1 # шаг по времени
+        r_por: float   = 15 #радиус поражения [м]
+        t_max: float   = 300 # макс. время полета [c]
+        n_y_max: float = 40 # максимальная перегрузка
+        y_min: float   = 0 # минимальная высота [м]
+        v_max: float   = 1360 # максимальая скорость полета (4 Маха) [м/с]
+        
+@dataclass  
+class InitialConditions:
+    """Начальные условия"""
+    # Ракета
+    x_r0: float     = 0           # начальная X ракеты [м]
+    y_r0: float     = 10000       # начальная Y ракеты [м] 
+    v_r0: float     = 700         # начальная скорость ракеты [м/с]
+    theta_r0: float = -999    # начальный угол (-999 = вычислить)
+    
+    # Цель
+    x_c0: float     = 30000       # начальная X цели [м]
+    y_c0: float     = 10000       # начальная Y цели [м]
+    v_c0: float     = 600         # скорость цели [м/с]
+    theta_c0: float = 0       # угол цели [рад]
+    
+    # Двигатель
+    mu_0: float     = 0.2         # относительный запас топлива
+    eta_0: float    = 15         # тяговооружённость
+    k_m: float      = 2.5          # распределение массы
+    k_p: float      = 0.5          # распределение тяги
+    m_start: float  = 161.5    # стартовая масса [кг]
+    m_bch: float    = 100.4      # масса боевой части [кг]
+    diameter: float = 0.18    # диаметр [м]
+    I_ud: float     = 2500        # удельный импульс [м/с]
+    length: float   = 3.7       # длина [м]
+
+@dataclass
+class GuidanceParams:
+    """Параметры наведения"""
+    method: int         = 8   # 8 = пропорциональное сближение
+    k: float            = 8.0 # коэффициент метода
+    phi_upr: float      = 0   # угол управления [рад]
+    theta_r_init: float = 0   # начальный угол [рад]
+
+# ============ КЛАСС АТМОСФЕРЫ ============
+class Atmosphere:
+    def __init__(self):
+        self.atm = atmo()
+    
+    def density(self, h):
+        return self.atm.rho(h)
+    
+    def pressure(self, h):
+        return self.atm.p(h)
+    
+    def sound_speed(self, h):
+        return 340  
+
+# ============ КЛАСС ГЕОМЕТРИЧЕСКИХ ФУНКЦИЙ ============
+class GeometryCalculator:
+    def __init__(self):
+        self.g = 9.85066
+
+    # Функции вычисления геометрических параметров
+    @njit(fastmath=True)
+    def r(x_r, y_r, x_c, y_c):
+        return np.sqrt((y_c - y_r) ** 2 + (x_c - x_r) ** 2)
+
+    @njit(fastmath=True)
+    def dot_r(x_r, y_r, x_c, y_c, v_r, v_c, Theta_r, Theta_c):
+        r_rc = self.r(x_r, y_r, x_c, y_c)
+        Delta_x = x_c - x_r
+        Delta_y = y_c - y_r
+        Delta_dot_x = v_c * np.cos(Theta_c) - v_r * np.cos(Theta_r)
+        Delta_dot_y = v_c * np.sin(Theta_c) - v_r * np.sin(Theta_r)
+        return (Delta_y * Delta_dot_y + Delta_x * Delta_dot_x) / r_rc
+
+    @njit(fastmath=True)
+    def double_dot_r(x_r, y_r, x_c, y_c, v_r, v_c, Theta_r, Theta_c, a_xa_c, a_ya_c, a_xa_r, a_ya_r):
+        r_rc = self.r(x_r, y_r, x_c, y_c)
+        dot_r_rc = self.dot_r(x_r, y_r, x_c, y_c, v_r, v_c, Theta_r, Theta_c)
+        Delta_x = x_c - x_r
+        Delta_y = y_c - y_r
+        Delta_dot_x = v_c * np.cos(Theta_c) - v_r * np.cos(Theta_r)
+        Delta_dot_y = v_c * np.sin(Theta_c) - v_r * np.sin(Theta_r)
+        Delta_double_dot_x = a_xa_c * np.cos(Theta_c) - a_xa_r * np.cos(Theta_r) - a_ya_c * np.sin(
+            Theta_c) + a_ya_r * np.sin(Theta_r)
+        Delta_double_dot_y = a_xa_c * np.sin(Theta_c) - a_xa_r * np.sin(Theta_r) + a_ya_c * np.cos(
+            Theta_c) - a_ya_r * np.cos(Theta_r)
+        return (
+                    Delta_dot_x ** 2 + Delta_x * Delta_double_dot_x + Delta_y * Delta_double_dot_y + Delta_dot_y ** 2 - dot_r_rc ** 2) / r_rc
+
+    @njit(fastmath=True)
+    def epsilon(x_r, y_r, x_c, y_c):
+        if (x_c - x_r > 0):
+            return np.atan((y_c - y_r) / (x_c - x_r))
+
+        elif ((x_c - x_r < 0) and (y_c - y_r >= 0)):
+            return np.atan((y_c - y_r) / (x_c - x_r)) + np.pi
+
+        elif ((x_c - x_r < 0) and (y_c - y_r < 0)):
+            return np.atan((y_c - y_r) / (x_c - x_r)) - np.pi
+
+        elif ((x_c == x_r) and (y_c >= y_r)):
+            return np.pi / 2
+
+        elif ((x_c == x_r) and (y_c < y_r)):
+            return -np.pi / 2
+
+    @njit(fastmath=True)
+    def dot_epsilon(x_r, y_r, x_c, y_c, v_r, v_c, Theta_r, Theta_c):
+        r_rc = self.r(x_r, y_r, x_c, y_c)
+        Delta_x = x_c - x_r
+        Delta_y = y_c - y_r
+        Delta_dot_x = v_c * np.cos(Theta_c) - v_r * np.cos(Theta_r)
+        Delta_dot_y = v_c * np.sin(Theta_c) - v_r * np.sin(Theta_r)
+
+        return (Delta_x * Delta_dot_y - Delta_y * Delta_dot_x) / (r_rc ** 2)
+
+    @njit(fastmath=True)
+    def double_dot_epsilon(x_r, y_r, x_c, y_c, v_r, v_c, Theta_r, Theta_c, a_xa_c, a_ya_c, a_xa_r, a_ya_r):
+        r_rc = self.r(x_r, y_r, x_c, y_c)
+        dot_r_rc = self.dot_r(x_r, y_r, x_c, y_c, v_r, v_c, Theta_r, Theta_c)
+        Delta_x = x_c - x_r
+        Delta_y = y_c - y_r
+        Delta_dot_x = v_c * np.cos(Theta_c) - v_r * np.cos(Theta_r)
+        Delta_dot_y = v_c * np.sin(Theta_c) - v_r * np.sin(Theta_r)
+        Delta_double_dot_x = a_xa_c * np.cos(Theta_c) - a_xa_r * np.cos(Theta_r) - a_ya_c * np.sin(Theta_c) + a_ya_r * np.sin(Theta_r)
+        Delta_double_dot_y = a_xa_c * np.sin(Theta_c) - a_xa_r * np.sin(Theta_r) + a_ya_c * np.cos(Theta_c) - a_ya_r * np.cos(Theta_r)
+        Add_1 = (Delta_x * Delta_double_dot_y - Delta_y * Delta_double_dot_x) / (r_rc ** 2)
+        Add_2 = 2 * ((Delta_y * Delta_dot_y + Delta_x * Delta_dot_x) * (Delta_x * Delta_dot_y - Delta_y * Delta_dot_x)) / (r_rc ** 4)
+
+        return (Add_1 - Add_2)
+
+    @njit(fastmath=True)
+    def dpar_i(n_xa_i, v_i, Theta_i):
+        dv_i = (n_xa_i - np.sin(Theta_i)) * self.g
+        dx_i = v_i * np.cos(Theta_i)
+        dy_i = v_i * np.sin(Theta_i)
+        return dv_i, dx_i, dy_i
+
+    @njit(fastmath=True)
+    def par_i1(Theta_i, dTheta_i, dt, v_i, dv_i, x_i, dx_i, y_i, dy_i):
+        Theta_i1 = Theta_i + dTheta_i * dt
+        v_i1 = v_i + dv_i * dt
+        x_i1 = x_i + dx_i * dt
+        y_i1 = y_i + dy_i * dt
+        return Theta_i1, v_i1, x_i1, y_i1
+
+    @njit(fastmath=True)
+    def value_c(v_c, eps_c, r_nc, delta_r_dot):
+        return -(v_c * np.sin(eps_c)) / (r_nc * delta_r_dot)
+    
+    @njit(fastmath=True)
+    def n_xa_tiaga(X_a, P, alf, m_r):
+        return (-X_a + P)/ (m_r * self.g)
+
+    def n_ya_tiaga(Y_a, P, alf, m_r):
+        return (Y_a + P * np.sin(alf)) / (m_r * self.g)
+
+    @njit(fastmath=True)
+    def n_ya_pot_ParallelNav(epsilon_rc, v_r, v_c, Theta_r, Theta_c, a_xa_r, a_xa_c, a_ya_c):
+        num_1 = a_ya_c * v_r * np.cos(epsilon_rc - Theta_c)
+        num_2 = (a_xa_c * v_r - a_xa_r * v_c) * np.sin(epsilon_rc - Theta_c)
+        denum = g * v_r * np.sqrt(1 - ((v_c / v_r) * np.sin(epsilon_rc - Theta_c)) ** 2)
+        return (num_1 - num_2) / denum + np.cos(Theta_r)
+
+    @njit(fastmath=True)
+    def n_ya_pot_ProportionalNavConst(v_r, dot_epsilon_rc, Theta_r, k):
+        return (v_r / g * k * dot_epsilon_rc + np.cos(Theta_r))
+    
+class CalcTragectory:
+
+    def X(self, c_x):
+        pass
+        return 
+    
+    def Y(self, c_y):
+        pass
+        return 
 
 
 
