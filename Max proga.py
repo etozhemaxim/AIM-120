@@ -12,7 +12,7 @@ plt.rcParams['mathtext.it'] = "Times New Roman:italic"
 
 d = 0.0722                                          # Калибр
 N = 500                                            # Число шагов
-M = np.linspace(0.01, 2, N + 1)                    # Скорость: от 0 до 2 Махов
+M = np.linspace(0.1, 2, N + 1)                    # Скорость: от 0 до 2 Махов
 ataka = np.linspace(-10, 10, N + 1)  
 l_f = 1.635                                         # Длина фюзеляжа
 lambda_Nos = (d / 2) / d                            # Удлинение носовой части
@@ -55,7 +55,7 @@ S_bok = S_b_Nos + pi * d * (l_f - d / 2)
 
 # angles = [-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10]
 angles = [10, 8, 6, 4, 2, 0]
-deltas = [-25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25]
+deltas = [-25, -15, -10, -5, 0, 5, 10, 15, 25]
 
 c_y_alpha_is_f = np.zeros_like(M)
 c_y_alpha_is_kr = np.zeros_like(M)
@@ -78,8 +78,6 @@ kappa_M = 0.96 # по рис. 3.13 стр. 162
 # Учет влияния длины передней части корпуса
 kappa_nos_kr = 0.6 + 0.4 * (1 - exp(-0.5 * L_1_otn_kr))
 kappa_nos_r = 0.6 + 0.4 * (1 - exp(-0.5 * L_1_otn_r))
-
-pol_step_lin_M = np.zeros_like(M)
 
 L_xv_otn_kr = np.zeros_like(M)
 b_otn_kr = np.zeros_like(M)
@@ -361,15 +359,7 @@ for idx, angle_ataki in enumerate(angles):
         # S_bok[i] = AeroBDSM.get_S_b_F(S_b_Nos, ds[i], Ls[i], Ms[i], b_bs[i], L_hvs[i])
         c_y_f[i] = 57.3 * c_y_alpha_is_f[i] * kappa_alpha[i] * sin(np.radians(angle_ataki)) * cos(np.radians(angle_ataki)) \
         + 4 * S_bok * c_y_perp_Cil[i] * (sin(np.radians(angle_ataki)))**2 * sign(angle_ataki) / (pi * d**2)
-        print(f"c_y_alpha_is_f[i]={c_y_alpha_is_f[i]}")
-        print(f"kappa_alpha[i]={kappa_alpha[i]}")
-        print(f"sin(np.radians(angle_ataki))={sin(np.radians(angle_ataki))}")
-        print(f"cos(np.radians(angle_ataki))={cos(np.radians(angle_ataki))}")
-        print(f"c_y_perp_Cil[i]={c_y_perp_Cil[i]}")
-        print(f"(sin(np.radians(angle_ataki)))**2={(sin(np.radians(angle_ataki)))**2}")
-        print(f"sign(angle_ataki)={sign(angle_ataki)}")
-        print((4 * S_bok) /(pi * d**2) )
-        print(60 * '=' )
+
         A_kr[i] = AeroBDSM.get_A_IsP(M[i], zeta, c_y_alpha_is_kr[i])
         c_y_is_kr[i] = 57.3 * c_y_alpha_is_kr[i] * sin(np.radians(angle_ataki)) * cos(np.radians(angle_ataki)) + A_kr[i] * (sin(np.radians(angle_ataki)))**2 * sign(angle_ataki)
         A_r[i] = AeroBDSM.get_A_IsP(M[i], zeta, c_y_alpha_is_r[i])
@@ -393,126 +383,126 @@ for idx, angle_ataki in enumerate(angles):
         c_y_b[i] = c_y_b1[i] * np.radians(angle_ataki) + c_y_I[i] * np.radians(delta_I) + c_y_II[i] * np.radians(delta_II)
 
 
-# График коэффициента подъёмной силы c_y при различных малых углах атаки и углах отклонения ОУ от числа Маха
-for angle_ataki in angles:
-    for i in range(len(M)):
-        c_y[i] = c_y_alpha[i] * np.radians(angle_ataki) + c_y_delta_I[i] * np.radians(delta_I) + c_y_delta_II[i] * np.radians(delta_II)
-    plt.plot(M, c_y, label=f'α = {angle_ataki}°', linewidth=2)
-plt.xlabel('M', fontsize = 12)
-plt.ylabel('$c_{y}$', fontsize = 12)
-plt.title('Зависимость коэффициента подъёмной силы $c_{y}$\nпри различных малых углах атаки от числа Маха', fontsize = 12)
-plt.legend(fontsize = 10, loc = 'best')
-plt.grid(True, alpha = 0.3)
-plt.minorticks_on()
-plt.grid(True, which = 'major', linestyle = '-', alpha = 0.5)
-plt.grid(True, which = 'minor', linestyle = '--', alpha = 0.2)
-plt.tight_layout()
-plt.show()
+# # График коэффициента подъёмной силы c_y при различных малых углах атаки и углах отклонения ОУ от числа Маха
+# for angle_ataki in angles:
+#     for i in range(len(M)):
+#         c_y[i] = c_y_alpha[i] * np.radians(angle_ataki) + c_y_delta_I[i] * np.radians(delta_I) + c_y_delta_II[i] * np.radians(delta_II)
+#     plt.plot(M, c_y, label=f'α = {angle_ataki}°', linewidth=2)
+# plt.xlabel('M', fontsize = 12)
+# plt.ylabel('$c_{y}$', fontsize = 12)
+# plt.title('Зависимость коэффициента подъёмной силы $c_{y}$\nпри различных малых углах атаки от числа Маха', fontsize = 12)
+# plt.legend(fontsize = 10, loc = 'best')
+# plt.grid(True, alpha = 0.3)
+# plt.minorticks_on()
+# plt.grid(True, which = 'major', linestyle = '-', alpha = 0.5)
+# plt.grid(True, which = 'minor', linestyle = '--', alpha = 0.2)
+# plt.tight_layout()
+# plt.show()
 
-# График коэф-та подъёмной силы ЛА по углу атаки c_y_alpha от числа Маха при разных alpha
-for angle_ataki in angles:
-    for i in range(len(M)):
-        c_y1[i] = c_y_alpha[i] * np.radians(angle_ataki)
-    plt.plot(M, c_y1, label=f'α = {angle_ataki}°', linewidth=2)
-plt.xlabel('M', fontsize = 12)
-plt.ylabel('$c_{y}^{\\mathrm{\\alpha}}$', fontsize = 12)
-plt.title('Зависимость коэффициента подъёмной силы по углу атаки $c_{y}^{\\mathrm{\\alpha}}$\nпри различных углах атаки от числа Маха', fontsize=12)
-plt.legend(fontsize = 10, loc = 'best')
-plt.grid(True, alpha = 0.3)
-plt.minorticks_on()
-plt.grid(True, which = 'major', linestyle = '-', alpha = 0.5)
-plt.grid(True, which = 'minor', linestyle = '--', alpha = 0.2)
-plt.tight_layout()
-plt.show()
+# # График коэф-та подъёмной силы ЛА по углу атаки c_y_alpha от числа Маха при разных alpha
+# for angle_ataki in angles:
+#     for i in range(len(M)):
+#         c_y1[i] = c_y_alpha[i] * np.radians(angle_ataki)
+#     plt.plot(M, c_y1, label=f'α = {angle_ataki}°', linewidth=2)
+# plt.xlabel('M', fontsize = 12)
+# plt.ylabel('$c_{y}^{\\mathrm{\\alpha}}$', fontsize = 12)
+# plt.title('Зависимость коэффициента подъёмной силы по углу атаки $c_{y}^{\\mathrm{\\alpha}}$\nпри различных углах атаки от числа Маха', fontsize=12)
+# plt.legend(fontsize = 10, loc = 'best')
+# plt.grid(True, alpha = 0.3)
+# plt.minorticks_on()
+# plt.grid(True, which = 'major', linestyle = '-', alpha = 0.5)
+# plt.grid(True, which = 'minor', linestyle = '--', alpha = 0.2)
+# plt.tight_layout()
+# plt.show()
 
-c_y_delta_1 = np.zeros_like(M)
-c_y_delta_2 = np.zeros_like(M)
+# c_y_delta_1 = np.zeros_like(M)
+# c_y_delta_2 = np.zeros_like(M)
 
-# График коэф-та подъёмной силы ЛА по углам отклонения ОУ c_y_delta_I от числа Маха при разных alpha
-for angle_ataki in angles:
-    for i in range(len(M)):
-        c_y_delta_1[i] = c_y_delta_I[i] * np.radians(angle_ataki)
-    plt.plot(M, c_y_delta_1, label=f'α = {angle_ataki}°', linewidth=2)
-plt.xlabel('M', fontsize=12)
-plt.ylabel('$c_{y}^{\\mathrm{\\delta}_{I}}$', fontsize=12)
-plt.title('Зависимость коэф-та подъёмной силы по углам отклонения ОУ $c_{y}^{\\mathrm{\\delta}_{I}}$\nпри различных углах атаки от числа Маха', fontsize = 12)
-plt.legend(fontsize = 10, loc = 'best')
-plt.grid(True, alpha = 0.3)
-plt.minorticks_on()
-plt.grid(True, which = 'major', linestyle = '-', alpha = 0.5)
-plt.grid(True, which = 'minor', linestyle = '--', alpha = 0.2)
-plt.tight_layout()
-plt.show()
+# # График коэф-та подъёмной силы ЛА по углам отклонения ОУ c_y_delta_I от числа Маха при разных alpha
+# for angle_ataki in angles:
+#     for i in range(len(M)):
+#         c_y_delta_1[i] = c_y_delta_I[i] * np.radians(angle_ataki)
+#     plt.plot(M, c_y_delta_1, label=f'α = {angle_ataki}°', linewidth=2)
+# plt.xlabel('M', fontsize=12)
+# plt.ylabel('$c_{y}^{\\mathrm{\\delta}_{I}}$', fontsize=12)
+# plt.title('Зависимость коэф-та подъёмной силы по углам отклонения ОУ $c_{y}^{\\mathrm{\\delta}_{I}}$\nпри различных углах атаки от числа Маха', fontsize = 12)
+# plt.legend(fontsize = 10, loc = 'best')
+# plt.grid(True, alpha = 0.3)
+# plt.minorticks_on()
+# plt.grid(True, which = 'major', linestyle = '-', alpha = 0.5)
+# plt.grid(True, which = 'minor', linestyle = '--', alpha = 0.2)
+# plt.tight_layout()
+# plt.show()
 
-# График коэф-та подъёмной силы ЛА по углам отклонения ОУ c_y_delta_II от числа Маха при разных alpha
-for angle_ataki in angles:
-    for i in range(len(M)):
-        c_y_delta_2[i] = c_y_delta_II[i] * np.radians(angle_ataki)
-    plt.plot(M, c_y_delta_2, label = f'α = {angle_ataki}°', linewidth = 2)
-plt.xlabel('M', fontsize=12)
-plt.ylabel('$c_{y}^{\\mathrm{\\delta}_{II}}$', fontsize=12)
-plt.title('Зависимость коэф-та подъёмной силы по углам отклонения ОУ $c_{y}^{\\mathrm{\\delta}_{II}}$\nпри различных углах атаки от числа Маха', fontsize = 12)
-plt.legend(fontsize = 10, loc = 'best')
-plt.grid(True, alpha = 0.3)
-plt.minorticks_on()
-plt.grid(True, which = 'major', linestyle = '-', alpha = 0.5)
-plt.grid(True, which = 'minor', linestyle = '--', alpha = 0.2)
-plt.tight_layout()
-plt.show()
+# # График коэф-та подъёмной силы ЛА по углам отклонения ОУ c_y_delta_II от числа Маха при разных alpha
+# for angle_ataki in angles:
+#     for i in range(len(M)):
+#         c_y_delta_2[i] = c_y_delta_II[i] * np.radians(angle_ataki)
+#     plt.plot(M, c_y_delta_2, label = f'α = {angle_ataki}°', linewidth = 2)
+# plt.xlabel('M', fontsize=12)
+# plt.ylabel('$c_{y}^{\\mathrm{\\delta}_{II}}$', fontsize=12)
+# plt.title('Зависимость коэф-та подъёмной силы по углам отклонения ОУ $c_{y}^{\\mathrm{\\delta}_{II}}$\nпри различных углах атаки от числа Маха', fontsize = 12)
+# plt.legend(fontsize = 10, loc = 'best')
+# plt.grid(True, alpha = 0.3)
+# plt.minorticks_on()
+# plt.grid(True, which = 'major', linestyle = '-', alpha = 0.5)
+# plt.grid(True, which = 'minor', linestyle = '--', alpha = 0.2)
+# plt.tight_layout()
+# plt.show()
 
-# График c_y_alpha изолированного руля
-a = np.zeros_like(M)
-for angle_ataki in angles:
-    for i in range(len(M)):
-        c_y_alpha_is_r[i] = AeroBDSM.get_c_y_alpha_IsP(M[i], lambda_r, c_otn, chi_05, zeta)
-        a[i] = c_y_alpha_is_r[i] * np.radians(angle_ataki)
-    plt.plot(M, a, label = f'α = {angle_ataki}°', linewidth = 2)
-plt.xlabel('M', fontsize=14)
-plt.ylabel('$c_{yиз.р}^{\\mathrm{\\alpha}}$', fontsize=14)
-plt.title('График $c_{y}^{\\mathrm{\\alpha}}$ изолированного руля', fontsize = 14)
-plt.legend(fontsize = 10, loc = 'best')
-plt.grid(True, alpha = 0.3)
-plt.minorticks_on()
-plt.grid(True, which = 'major', linestyle = '-', alpha = 0.5)
-plt.grid(True, which = 'minor', linestyle = '--', alpha = 0.2)
-plt.tight_layout()
-plt.show()
+# # График c_y_alpha изолированного руля
+# a = np.zeros_like(M)
+# for angle_ataki in angles:
+#     for i in range(len(M)):
+#         c_y_alpha_is_r[i] = AeroBDSM.get_c_y_alpha_IsP(M[i], lambda_r, c_otn, chi_05, zeta)
+#         a[i] = c_y_alpha_is_r[i] * np.radians(angle_ataki)
+#     plt.plot(M, a, label = f'α = {angle_ataki}°', linewidth = 2)
+# plt.xlabel('M', fontsize=14)
+# plt.ylabel('$c_{yиз.р}^{\\mathrm{\\alpha}}$', fontsize=14)
+# plt.title('График $c_{y}^{\\mathrm{\\alpha}}$ изолированного руля', fontsize = 14)
+# plt.legend(fontsize = 10, loc = 'best')
+# plt.grid(True, alpha = 0.3)
+# plt.minorticks_on()
+# plt.grid(True, which = 'major', linestyle = '-', alpha = 0.5)
+# plt.grid(True, which = 'minor', linestyle = '--', alpha = 0.2)
+# plt.tight_layout()
+# plt.show()
 
-# График c_y_alpha изолированного крыла
-b = np.zeros_like(M)
-for angle_ataki in angles:
-    for i in range(len(M)):
-        c_y_alpha_is_kr[i] = AeroBDSM.get_c_y_alpha_IsP(M[i], lambda_kr, c_otn, chi_05, zeta)
-        b[i] = c_y_alpha_is_kr[i] * np.radians(angle_ataki)
-    plt.plot(M, b, label = f'α = {angle_ataki}°', linewidth = 2)
-plt.xlabel('M', fontsize=14)
-plt.ylabel('$c_{yиз.кр}^{\\mathrm{\\alpha}}$', fontsize=14)
-plt.title('График $c_{y}^{\\mathrm{\\alpha}}$ изолированного крыла', fontsize = 14)
-plt.legend(fontsize = 10, loc = 'best')
-plt.grid(True, alpha = 0.3)
-plt.minorticks_on()
-plt.grid(True, which = 'major', linestyle = '-', alpha = 0.5)
-plt.grid(True, which = 'minor', linestyle = '--', alpha = 0.2)
-plt.tight_layout()
-plt.show()
+# # График c_y_alpha изолированного крыла
+# b = np.zeros_like(M)
+# for angle_ataki in angles:
+#     for i in range(len(M)):
+#         c_y_alpha_is_kr[i] = AeroBDSM.get_c_y_alpha_IsP(M[i], lambda_kr, c_otn, chi_05, zeta)
+#         b[i] = c_y_alpha_is_kr[i] * np.radians(angle_ataki)
+#     plt.plot(M, b, label = f'α = {angle_ataki}°', linewidth = 2)
+# plt.xlabel('M', fontsize=14)
+# plt.ylabel('$c_{yиз.кр}^{\\mathrm{\\alpha}}$', fontsize=14)
+# plt.title('График $c_{y}^{\\mathrm{\\alpha}}$ изолированного крыла', fontsize = 14)
+# plt.legend(fontsize = 10, loc = 'best')
+# plt.grid(True, alpha = 0.3)
+# plt.minorticks_on()
+# plt.grid(True, which = 'major', linestyle = '-', alpha = 0.5)
+# plt.grid(True, which = 'minor', linestyle = '--', alpha = 0.2)
+# plt.tight_layout()
+# plt.show()
 
-# График c_y_alpha изолированного фюзеляжа
-c = np.zeros_like(M)
-for angle_ataki in angles:
-    for i in range(len(M)):
-        c_y_alpha_is_f[i] = AeroBDSM.get_c_y_alpha_NosCil_Ell(M[i], lambda_Nos, lambda_Cil)
-        c[i] = c_y_alpha_is_f[i] * np.radians(angle_ataki)
-    plt.plot(M, c, label = f'α = {angle_ataki}°', linewidth = 2)
-plt.xlabel('M', fontsize=14)
-plt.ylabel('$c_{yиз.ф}^{\\mathrm{\\alpha}}$', fontsize=14)
-plt.title('График $c_{y}^{\\mathrm{\\alpha}}$ изолированного фюзеляжа', fontsize = 14)
-plt.legend(fontsize = 10, loc = 'best')
-plt.grid(True, alpha = 0.3)
-plt.minorticks_on()
-plt.grid(True, which = 'major', linestyle = '-', alpha = 0.5)
-plt.grid(True, which = 'minor', linestyle = '--', alpha = 0.2)
-plt.tight_layout()
-plt.show()
+# # График c_y_alpha изолированного фюзеляжа
+# c = np.zeros_like(M)
+# for angle_ataki in angles:
+#     for i in range(len(M)):
+#         c_y_alpha_is_f[i] = AeroBDSM.get_c_y_alpha_NosCil_Ell(M[i], lambda_Nos, lambda_Cil)
+#         c[i] = c_y_alpha_is_f[i] * np.radians(angle_ataki)
+#     plt.plot(M, c, label = f'α = {angle_ataki}°', linewidth = 2)
+# plt.xlabel('M', fontsize=14)
+# plt.ylabel('$c_{yиз.ф}^{\\mathrm{\\alpha}}$', fontsize=14)
+# plt.title('График $c_{y}^{\\mathrm{\\alpha}}$ изолированного фюзеляжа', fontsize = 14)
+# plt.legend(fontsize = 10, loc = 'best')
+# plt.grid(True, alpha = 0.3)
+# plt.minorticks_on()
+# plt.grid(True, which = 'major', linestyle = '-', alpha = 0.5)
+# plt.grid(True, which = 'minor', linestyle = '--', alpha = 0.2)
+# plt.tight_layout()
+# plt.show()
 
 
 for idx, angle_ataki in enumerate(angles):
@@ -567,19 +557,19 @@ for idx, angle_ataki in enumerate(angles):
         c_x_wing_data[idx, i] = c_x_wing[i]
         c_x_fins_data[idx, i] = c_x_fins[i]
 
-plt.figure(figsize=(10, 6))
-for idx, angle_ataki in enumerate(angles):
-    plt.plot(M, c_x_fuselage_data[idx, :], linewidth=2, label=f'α={angle_ataki}°')
-plt.xlabel('M', fontsize = 12)
-plt.ylabel('$c_{x}$', fontsize = 12)
-plt.title('Зависимость $c_{x}$\nпри различных малых углах атаки от числа Маха', fontsize = 12)
-plt.legend(fontsize = 10, loc = 'best')
-plt.grid(True, alpha = 0.3)
-plt.minorticks_on()
-plt.grid(True, which = 'major', linestyle = '-', alpha = 0.5)
-plt.grid(True, which = 'minor', linestyle = '--', alpha = 0.2)
-plt.tight_layout()
-plt.show()
+# plt.figure(figsize=(10, 6))
+# for idx, angle_ataki in enumerate(angles):
+#     plt.plot(M, c_x_data[idx, :], linewidth=2, label=f'α={angle_ataki}°')
+# plt.xlabel('M', fontsize = 12)
+# plt.ylabel('$c_{x}$', fontsize = 12)
+# plt.title('Зависимость $c_{x}$ при различных углах атаки от числа Маха', fontsize = 14)
+# plt.legend(fontsize = 10, loc = 'best')
+# plt.grid(True, alpha = 0.3)
+# plt.minorticks_on()
+# plt.grid(True, which = 'major', linestyle = '-', alpha = 0.5)
+# plt.grid(True, which = 'minor', linestyle = '--', alpha = 0.2)
+# plt.tight_layout()
+# plt.show()
 
 
 Delta_x_Fa_f = np.zeros_like(M)
@@ -633,7 +623,7 @@ mz_10 = np.zeros_like(M)
 for delta_I in deltas:
     for i in range(len(ataka)):
         delta_II = 0
-        Mach = 2
+        Mach = 3
         # Координата фокусу по углу атаки фюзеляжа
         Delta_x_Fa_f[i] = AeroBDSM.get_Delta_bar_x_Falpha_NosCil(Mach, lambda_Nos, lambda_Cil)
         x_Fa_f[i] = d / 2 - (2 * pi * (d / 2)**3 / 3) / S + Delta_x_Fa_f[i]
@@ -765,44 +755,24 @@ for delta_I in deltas:
 
         # Координата фокуса по углу отклонения несущих поверхностей
         x_F_delta_I[i] = 1 / K_delta_0_r[i] * (k_delta_0_r[i] * x_F_is_r[i] + x_Fi_f_r[i] * (K_delta_0_r[i] - k_delta_0_r[i]))
-        x_FdI[i] = 1 / c_y_delta_I[i] * (c_y_alpha_is_r[i] * K_delta_0_r[i] * n_I[i] * S_r / S * k_t_I[i] * x_F_delta_I[i])
+        x_FdI[i] = 1 / c_y_delta_I[i] * (c_y_alpha_is_r[i] * K_delta_0_r[i] * n_I[i] * S_r / S * k_t_I[i] * x_F_delta_I[i] - c_y_alpha_is_r[i] * K_aa_r[i] * S_r / S * k_t_II[i] * eps_delta_sr[i] * x_Fa_II[i]) 
 
         x_F_delta_II[i] = 1 / K_delta_0_kr[i] * (k_delta_0_kr[i] * x_F_is_kr[i] + x_Fi_f_kr[i] * (K_delta_0_kr[i] - k_delta_0_kr[i]))
-        x_FdII[i] = 1 / c_y_delta_II[i] * (c_y_alpha_is_kr[i] * K_delta_0_kr[i] * n_II[i] * S_kr / S * k_t_II[i] * x_F_delta_II[i])
+        x_FdII[i] = x_F_delta_II[i]
 
-        x_t = 0.6938
+        x_t = 0.45062
         mz_a[i] = c_y_alpha[i] * ((x_t - x_Fa[i]) / l_f)
         mz_dI[i] = c_y_delta_I[i] * ((x_t - x_FdI[i]) / l_f)
         mz_dII[i] = c_y_delta_II[i] * ((x_t - x_FdII[i]) / l_f)
-        mz_10 = 0.01
-
-        omega = 120 #рад/с, в Интернете нашел, что скорость вращения 15-20 об/с
-        V = Mach * 340
-        omega_z = omega * l_f / V
-        alpha_dot = 0.1
-        alpha_dot_otn = alpha_dot * l_f / V
-        delta_dot = 0.87
-        delta_dot_otn = delta_dot * l_f / V
-
-        x_c_ob = 0.8
-        mz_omega_z_f = -2 * (1 - x_t / l_f + (x_t / l_f)**2 - x_c_ob / l_f)
-        x_t_otn = (x_t - x_Ak) / b_Ak_r
-        mz_omega_z_I[i] = -57.3 * (c_y_alpha_is_r[i] * K_aa_r[i] * (x_t_otn - 1 / 2)**2)
-        delta_mz[i] = -57.3 * c_y_alpha_is_kr[i] * K_aa_kr[i] * eps_alpha_sr[i] * (x_t - x_b_r + b_r / 2) / b_kr * (x_t - x_Fa_II[i]) / b_kr
-        mz_omega_z_II[i] = -57.3 * (c_y_alpha_is_kr[i] * K_aa_kr[i] * (x_t_otn - 1 / 2)**2) + delta_mz[i]
-        mz_omega_z[i] = mz_omega_z_f * S_f / S * 1**2 + mz_omega_z_I[i] * S_r / S * (b_r / l_f)**2 * sqrt(k_t_I[i]) + mz_omega_z_II[i] * S_kr / S * (b_kr / l_f)**2 * sqrt(k_t_II[i])
-
-        mz_alpha_dot[i] = -57.3 * c_y_alpha_is_kr[i] * K_aa_kr[i] * S_kr / S * sqrt(k_t_II[i]) * eps_alpha_sr[i] * ((x_Fa_II[i] - x_t) / l_f) * ((x_b_kr + b_kr / 2 - x_b_r + b_r / 2) / l_f)
-        mz_delta_dot[i] = mz_alpha_dot[i] * eps_delta_sr[i] / eps_alpha_sr[i]
+        print(x_FdII[i])
 
 for delta_I in deltas:
     for i in range(len(ataka)):
-        mz[i] = mz_10 + mz_a[i] * np.radians(ataka[i]) + mz_dI[i] * np.radians(delta_I) + mz_dII[i] * np.radians(delta_II) \
-        #+ mz_omega_z[i] * omega_z + mz_alpha_dot[i] * alpha_dot_otn + mz_delta_dot[i] * delta_dot_otn
-    plt.plot(ataka, mz, label=f'delta = {delta_I}°', linewidth=2)
-plt.xlabel('alpha', fontsize = 12)
-plt.ylabel('$mz$', fontsize = 12)
-plt.title('', fontsize = 12)
+        mz[i] = mz_a[i] * np.radians(ataka[i]) + mz_dI[i] * np.radians(delta_I) + mz_dII[i] * np.radians(delta_II)
+    plt.plot(ataka, mz, label=r'$\mathrm{\delta_I}$ = ' + f'{delta_I}°', linewidth=2)
+plt.xlabel(r'Угол атаки $\alpha$', fontsize=12)
+plt.ylabel('Момент тангажа $mz$', fontsize = 12)
+plt.title('Зависимость момента тангажа ЛА от угла атаки\nпри различных углах отклонения руля\nЧисло Маха М = 1,5; топливо выгорело', fontsize = 14)
 plt.legend(fontsize = 10, loc = 'best')
 plt.grid(True, alpha = 0.3)
 plt.minorticks_on()

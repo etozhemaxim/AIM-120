@@ -8,9 +8,9 @@ def main():
 
     model = AerodynamicsModel(geom, aero, grid)
 
-    exporter = DataExporter(model, include_heavy=True)
+    exporter = DataExporter(model, include_heavy=False)
     dfs = exporter.build_all()
-    exporter.save_all(dfs, folder=None)
+    exporter.save_all(dfs, folder= 'data')
 
     print("Готово! Все CSV сохранены в текущей директории.")
 

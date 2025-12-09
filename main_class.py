@@ -32,16 +32,21 @@ class Geometry:
     S_kr: float = 0.0996
     S_rl: float = 0.2125
     S_f: float = 0.0248
-    L_xv_kr: float = 1.5   # Расстояние от середины бортовой хорды крыла до кормового среза НАДО ПОМЕНЯТЬ ЭТО НЕ МОЕ ЗНАЧЕНИЕ !!!!!!!!!
-    L_xv_rl: float = 3     # Расстояние от середины бортовой хорды руля до кормового среза НАДО ПОМЕНЯТЬ ЭТО НЕ МОЕ ЗНАЧЕНИЕ !!!!!!!!!
+    L_xv_kr: float = 2  # Расстояние от середины бортовой хорды крыла до кормового среза НАДО ПОМЕНЯТЬ ЭТО НЕ МОЕ ЗНАЧЕНИЕ !!!!!!!!!
+    L_xv_rl: float = 0.300    # Расстояние от середины бортовой хорды руля до кормового среза НАДО ПОМЕНЯТЬ ЭТО НЕ МОЕ ЗНАЧЕНИЕ !!!!!!!!!
     # Исходя из геометрии моего крыла и рис. 5.1 стр. 253
-    x_Ak: float  = 1    #НАДО ПОМЕНЯТЬ ЭТО НЕ МОЕ ЗНАЧЕНИЕ !!!!!!!!!
-    b_Ak_r: float = 1 #НАДО ПОМЕНЯТЬ ЭТО НЕ МОЕ ЗНАЧЕНИЕ !!!!!!!!!
-    b_Ak_kr : float= 2  #НАДО ПОМЕНЯТЬ ЭТО НЕ МОЕ ЗНАЧЕНИЕ !!!!!!!!!
+    x_Ak: float  = 0    #НАДО ПОМЕНЯТЬ ЭТО НЕ МОЕ ЗНАЧЕНИЕ !!!!!!!!!
+    b_Ak_r: float = 0.26 #НАДО ПОМЕНЯТЬ ЭТО НЕ МОЕ ЗНАЧЕНИЕ !!!!!!!!!
+    b_Ak_kr : float= 0.8 #НАДО ПОМЕНЯТЬ ЭТО НЕ МОЕ ЗНАЧЕНИЕ !!!!!!!!!
 
     x_b_kr: float = 1.632 # координата начала бортовой хорды крыла (от носа) НАДО ПОМЕНЯТЬ ЭТО НЕ МОЕ ЗНАЧЕНИЕ !!!!!!!!!
     x_b_rl: float = 3.632 # координата начала бортовой хорды руля (от носа) НАДО ПОМЕНЯТЬ ЭТО НЕ МОЕ ЗНАЧЕНИЕ !!!!!!!!!
-    x_t = 1.914 
+    x_t : float = 0
+
+    chi_0 : float = 0.896
+    chi_0_rl: float = 0.729
+    psi : float = 0.0
+
 
     
     @property
@@ -134,7 +139,7 @@ class FlowSetup:
     def default() -> FlowSetup:
         M = np.arange(0.5, 4.1, 0.1)
         small_angles_deg = np.array([-10, -5, 0, 5, 10], dtype=float)
-        big_angles_deg = np.array([-25, -20, -15, -10,0, 10, 15, 20, 25], dtype=float)
+        big_angles_deg = np.array([-25, -20, -15, -10,0, 5,10, 15, 20, 25], dtype=float)
         deltas_I_deg = np.array([0.0], dtype=float)  # крыло (пояс I)
         deltas_II_deg = np.arange(-25, 26, 5, dtype=float)  # рули (пояс II)
         phi_alpha = np.linspace(0, 0.436332, 10)
@@ -242,6 +247,7 @@ class InterferenceCalculator:
     def __init__(self, geom: Geometry, aero: AerodynamicParams):
         self.g = geom
         self.a = aero
+        self.D_bar = self.g.D_bar
 
     def _sqrt_term(self, M: np.ndarray) -> np.ndarray:
         return np.sqrt(np.maximum(M**2 - 1.0, 0.0))
@@ -251,7 +257,8 @@ class InterferenceCalculator:
         denom = (math.pi / 2.0) * self.g.D * np.where(st > 0, st, np.nan)
         b_bar = np.where(st > 0, b_b / denom, 0.0)
         L_bar = np.where(st > 0, L_xv / denom, 0.0)
-        c = self.a.c_profile #тут не толщина профиля а 3.29!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        c = (4 + (1 / self.a.eta_k) ) * (1 + 8 * self.D_bar**2) #тут не толщина профиля а 3.29!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         out = np.ones_like(M, dtype=float)
         mask = (b_bar > 0) & (c > 0)
@@ -269,9 +276,8 @@ class InterferenceCalculator:
         return (0.093 / (ReL ** (1/5))) * (L_1 / self.g.D) * (1 + 0.4 * M + 0.147 * M**2 - 0.006 * M**3)
 
     def _x_ps(self, delta_zvz_bar: np.ndarray, eta_k: float) -> np.ndarray:
-        D_bar = self.g.D_bar
-        term1 = (1 - (2 * D_bar)/(1 - D_bar**2) * delta_zvz_bar)
-        term2 = (1 - (D_bar * (eta_k - 1)) / ((1 - D_bar) * (eta_k + 1)) * delta_zvz_bar)
+        term1 = (1 - (2 * self.D_bar)/(1 - self.D_bar**2) * delta_zvz_bar)
+        term2 = (1 - (self.D_bar * (eta_k - 1)) / ((1 - self.D_bar) * (eta_k + 1)) * delta_zvz_bar)
         return term1 * term2
 
     def _x_nos(self, L1_bar: float) -> float:
@@ -378,10 +384,10 @@ class AerodynamicsModel:
 
     def compute_interference(self) -> Dict[str, np.ndarray]:
         k_aa_kr, K_aa_kr, F_L_kr, delta_zvz_bar_kr, x_ps_kr = self.inf.kK_aa_for_surface(
-            M=self.grid.M, b_b=self.g.b_b_kr, L_xv=1.701, L_1=self.L_1_kr, eta_k=self.a.eta_k
+            M=self.grid.M, b_b=self.g.b_b_kr, L_xv=self.g.L_xv_kr, L_1=self.L_1_kr, eta_k=self.a.eta_k
         )
         k_aa_rl, K_aa_rl, F_L_rl, delta_zvz_bar_rl, x_ps_rl = self.inf.kK_aa_for_surface(
-            M=self.grid.M, b_b=self.g.b_b_rl, L_xv=1.701, L_1=self.L_1_rl, eta_k=self.a.eta_k
+            M=self.grid.M, b_b=self.g.b_b_rl, L_xv=self.g.L_xv_rl, L_1=self.L_1_rl, eta_k=self.a.eta_k
         )
         return dict(
             k_aa_kr=k_aa_kr, K_aa_kr=K_aa_kr, F_L_kr=F_L_kr,
@@ -425,7 +431,7 @@ class AerodynamicsModel:
             ),
             self.grid.M, z_v
         )
-        eps = (1/ (2 * math.pi)) * (i_v / np.maximum(z_v, 1e-12)) \
+        eps = 1 * (i_v / np.maximum(z_v, 1e-12)) \
               * (self.g.l_raszmah_kr / self.g.l_raszmah_rl) \
               * (c_ya_kr / self.a.lambda_kr) \
               * (np.maximum(k_aa_kr, 1e-12) / np.maximum(K_aa_rl, 1e-12)) \
@@ -478,7 +484,7 @@ class AerodynamicsModel:
         kq_isp = self.kappa_q_isp()
 
         cya_sum = (cya_f * self.g.S_f_bar
-                   + cya_kr * K_aa_kr * (1.0 - eps_alpha_sr /1.0) * self.g.S_1_bar * kq_nos
+                   + cya_kr * K_aa_kr * (1.0 - eps_alpha_sr /57.3) * self.g.S_1_bar * kq_nos
                    + cya_rl * K_aa_rl * self.g.S_2_bar * kq_isp)
 
         alphas_rad = np.radians(self.grid.small_angles_deg)
@@ -533,30 +539,40 @@ class AerodynamicsModel:
 
         return k_delta_0_kr, K_delta_0_kr, k_delta_0_rl, K_delta_0_rl
 
-    def compute_eps_delta_sr(self, K_aa_rl: np.ndarray, k_delta_0_kr: np.ndarray) -> np.ndarray:
+    def compute_eps_delta_sr(self,
+                            K_aa_rl: np.ndarray,
+                            k_delta_0_kr: np.ndarray,
+                            alpha_p_deg: float = 0.0,
+                            y_v: float = 0.0) -> np.ndarray:
         """
-        eps_delta_sr для крыла (аналог eps_alpha_sr, но вместо k_aa — k_delta_0).
+        eps_delta_sr(M) для крыла (аналог eps_alpha_sr, но вместо k_aa — k_delta_0).
+        По умолчанию считаем при alpha_p=0, phi_alpha=psi_I=psi_II=0, y_v=0.
+        Возвращает массив shape (M,).
         """
-        M = self.grid.M
-        n_vals = self._n_eff(M)
-        z_v = self.z_v_meters()         # м
-        i_v = self.i_v(z_v)
-        c_ya_kr = self.c_ya_is_kr()
+        import math
+        M = self.grid.M                                   # (M,)
+        n_vals = self._n_eff(M)                           # (M,)
+        z_v = self.z_v_meters()                           # (M,)
+        i_v = self.i_v(z_v)                               # (M,)
+        c_ya_kr = self.c_ya_is_kr()                       # (M,)
+        alpha_p = math.radians(alpha_p_deg)
 
         psi_eps = AeroBDSMWrapper.vec(
             lambda Mi, zv: AeroBDSMWrapper.psi_eps(
-                Mi, 0.0, 0.0, 0.0, 0.0, zv, 1.0,
-                self.a.x_zI_II, self.d_II, self.a.l_1c_II, self.a.zeta_II, self.a.b_b_II, self.a.chi_0_II
+                Mi, alpha_p, 0.0, 0.0, 0.0, zv, y_v,
+                self.a.x_zI_II, self.d_II, self.a.l_1c_II,
+                self.a.zeta_II, self.a.b_b_II, self.a.chi_0_II
             ),
             M, z_v
-        )
+        )  # (M,)
 
-        eps = (1.0/(2*math.pi)) * (i_v / np.maximum(z_v,1e-12)) \
-              * (self.g.l_raszmah_kr / self.g.l_raszmah_rl) \
-              * (c_ya_kr / self.a.lambda_kr) \
-              * ((k_delta_0_kr * n_vals) / np.maximum(K_aa_rl, 1e-12)) \
-              * psi_eps
-        return eps
+        eps = (1.0/(2*math.pi)) * (i_v/np.maximum(z_v, 1e-12)) \
+            * (self.g.l_raszmah_kr/self.g.l_raszmah_rl) \
+            * (c_ya_kr/self.a.lambda_kr) \
+            * ((k_delta_0_kr*n_vals)/np.maximum(K_aa_rl, 1e-12)) \
+            * psi_eps
+        return eps  # (M,)
+
 
     def compute_cy_delta_1_2(self) -> Tuple[np.ndarray, np.ndarray]:
         intr = self.compute_interference()
@@ -652,7 +668,7 @@ class AerodynamicsModel:
                                             [L_cyl - L_tail],
                                             [M, M],
                                             [self.g.b_b_kr, self.g.b_b_rl],
-                                            [1.701, 0.316]))
+                                            [self.g.L_xv_kr, self.g.L_xv_rl]))
 
 
         S_bF = np.vectorize(sbf)(self.grid.M)[:, None]  # (M,)
@@ -749,7 +765,7 @@ class AerodynamicsModel:
         )
         c_nI_mean = np.mean(c_nI0, axis=1)
 
-        eps_delta_sr = (1.0/(2*math.pi)) * (i_v / np.maximum(z_v, 1e-12)) \
+        eps_delta_sr = 1.0 * (i_v / np.maximum(z_v, 1e-12)) \
                        * (self.g.l_raszmah_kr / self.g.l_raszmah_rl) \
                        * (c_nI_mean / self.a.lambda_kr) \
                        * ((k_delta_0_kr * n_vals) / np.maximum(K_aa_rl, 1e-12)) \
@@ -779,6 +795,18 @@ class AerodynamicsModel:
             c_y_I=c_y_I, c_y_II=c_y_II,
             c_y_sum_big=c_y_sum_big
         )
+
+    # поляра Лилиенталя
+    def Polar(self) -> Tuple[np.ndarray , np.ndarray]:
+
+        test = self.compute_big_angles()
+        c_y = test['c_y_sum_big']
+
+        c_x = self.resistance.c_x_tensor()
+
+        return c_y ,  c_x
+
+
 
     # ---- Сборщики DataFrame ----
 
@@ -1045,7 +1073,62 @@ class AerodynamicsModel:
                 "delta_II_deg": dII_list,
                 "m_z": mz_list
             })
-          
+    
+    def assemble_polar_lilienthal_df(self) -> 'pd.DataFrame':
+        """
+        Собирает данные для построения поляры Лилиенталя (C_y и C_x отдельно)
+        Колонки: Mach, alpha_deg, delta_I_deg, delta_II_deg, c_y, c_x, Polar_ratio
+        """
+        if pd is None:
+            raise RuntimeError("pandas не установлен.")
+
+        # Получаем C_y и C_x отдельно
+        c_y_array, c_x_array = self.Polar()  # оба массива формы (M,A,DI,DII)
+
+        # Создаем списки для DataFrame
+        M_list, alpha_list, delta_I_list, delta_II_list = [], [], [], []
+        cy_list, cx_list, polar_list = [], [], []
+
+        # Заполняем списки значениями из массивов
+        for i, M in enumerate(self.grid.M):
+            for ai, alpha in enumerate(self.grid.big_angles_deg):
+                for di, dI in enumerate(self.grid.deltas_I_deg):
+                    for dj, dII in enumerate(self.grid.deltas_II_deg):
+                        M_list.append(M)
+                        alpha_list.append(alpha)
+                        delta_I_list.append(dI)
+                        delta_II_list.append(dII)
+                        
+                        # Получаем значения
+                        cy_val = c_y_array[i, ai, di, dj]
+                        cx_val = c_x_array[i, ai, di, dj]
+                        
+                        cy_list.append(cy_val)
+                        cx_list.append(cx_val)
+                        
+                        # Вычисляем поляру (отношение C_y/C_x)
+                        # Защита от деления на ноль и очень маленьких значений
+                        if abs(cx_val) < 1e-10:
+                            polar_val = np.nan
+                        else:
+                            polar_val = cy_val / cx_val
+                        
+                        polar_list.append(polar_val)
+
+        # Создаем DataFrame
+        df = pd.DataFrame({
+            "Mach": M_list,
+            "alpha_deg": alpha_list,
+            "delta_I_deg": delta_I_list,
+            "delta_II_deg": delta_II_list,
+            "c_y": cy_list,
+            "c_x": cx_list,
+            "Polar_ratio": polar_list  # отношение C_y/C_x
+        })
+
+        return df
+
+
 # ========= 5) Глава IV "Лобовое сопротивление " =========
 
 class Resistance :
@@ -1257,10 +1340,34 @@ class Moments:
         self.geom = geom
         self.aero = aero
         self.W = w 
+        # расчет геометрии для mz: 5.13 - 5.15
+        self.chi_0 = self.geom.chi_0
+        self.l = self.geom.l_raszmah_kr
+        self.S = self.geom.S_kr
+        self.eta_k = self.aero.eta_k
+        self.psi = self.geom.psi
+        self.zeta = self.aero.zeta_kr
+
+
+        self.l_rl = self.geom.l_raszmah_rl
+        self.chi_0_rl = self.geom.chi_0_rl
+        self.S_rl = self.geom.S_rl
+        self.eta_k_rl = self.aero.eta_k
+        self.psi_rl = self.geom.psi
+        self.zeta_rl = self.aero.zeta_rl
+        
+        # для крыльев
+        self.b_a = (4/3) * (self.S/self.l) * (1 - (self.eta_k / (self.zeta + 1 )**2))
+        self.x_a = ( self.l / 6 ) * ((self.eta_k + 2) / (self.zeta + 1) ) * np.tan(self.chi_0)
+        self.y_a = ( self.l / 6 ) * ((self.eta_k + 2) / (self.zeta + 1) ) * np.tan(self.psi)
+        # для рулей
+        self.b_a_rl = (4/3) * (self.S/self.l) * (1 - (self.eta_k / (self.zeta_rl + 1 )**2))
+        self.x_a_rl = ( self.l / 6 ) * ((self.zeta_rl + 2) / (self.zeta_rl + 1) ) * np.tan(self.chi_0_rl)
+        self.y_a_rl = ( self.l / 6 ) * ((self.zeta_rl + 2) / (self.zeta_rl + 1) ) * np.tan(self.psi_rl)
+
 # Работаем в связанной системе координат, начало координат совпадает с центром масс
 
-# ....................4 Расчет координаты фокуса ЛА по углу атаки........................
-
+# ....................4 Расчет координаты фокуса ЛА по углу атаки.......................
 # ------------------------4.1  Фокус корпуса------------------------
     def delta_x_F(self) -> np.ndarray:
         fn = lambda M: self.W.Delta_bar_x_Falpha_NosCil(M, self.model.lambda_Nos, self.model.lambda_Cil)
@@ -1282,8 +1389,8 @@ class Moments:
     def x_Fa_f(self) -> np.ndarray:
 
         L_nos = self.geom.l_nos
-        W_nos = ((np.pi * self.geom.D**2)/4.0) * self.geom.l_nos #надо будет пересчитать объем черехз тройной интеграл пока я объем носа представил как объем цилиндра!!!
-        S_f = self.geom.S_f
+        W_nos = ((np.pi * self.geom.D**2)/8.0) * self.geom.l_nos #надо будет пересчитать объем черехз тройной интеграл пока я объем носа представил как объем цилиндра!!!
+        S_f = self.geom.S_m
         L_korm = self.geom.l_korm
         L_f = self.geom.l_f
         delta_x_F = self.delta_x_F() [:, None]#(M,)
@@ -1294,7 +1401,7 @@ class Moments:
         x_Fa_nos_cil = L_nos - (W_nos/S_f) + delta_x_F
     
         # 5.37
-        x_Fa_korm = L_f - ((S_f * L_korm - W_korm) / (S_f - S_dn))
+        x_Fa_korm =  L_f - 0.5 * L_korm              #L_f - ((S_f * L_korm - W_korm) / (S_f - S_dn))
 
         c_ya_f_nos_cil = self.model.c_ya_f()[:,None] #(M,1)
         c_ya_korm  = np.zeros_like(c_ya_f_nos_cil) # (M,1) — нет модели для кормы
@@ -1333,10 +1440,10 @@ class Moments:
 
         Phi = lambda x: 0.5*(1.0+np.vectorize(erf)(x/np.sqrt(2.0)))
 
-        F1_I = 1.0 - 1.0/(c*b_bar_kr**2) * (np.exp(-c*L_xv_kr_bar**2) - np.exp(-c*(b_bar_kr + L_xv_kr_bar)**2)) \
+        F1_I = 1.0 - (1.0/(c*b_bar_kr**2)) * (np.exp(-c*L_xv_kr_bar**2) - np.exp(-c*(b_bar_kr + L_xv_kr_bar)**2)) \
             + np.sqrt(np.pi)/(b_bar_kr*np.sqrt(c)) * Phi(L_xv_kr_bar*np.sqrt(2*c))
 
-        F1_II = 1.0 - 1.0/(c*b_bar_rl**2) * (np.exp(-c*L_xv_rl_bar**2) - np.exp(-c*(b_bar_rl + L_xv_rl_bar)**2)) \
+        F1_II = 1.0 - (1.0/(c*b_bar_rl**2)) * (np.exp(-c*L_xv_rl_bar**2) - np.exp(-c*(b_bar_rl + L_xv_rl_bar)**2)) \
                 + np.sqrt(np.pi)/(b_bar_rl*np.sqrt(c)) * Phi(L_xv_rl_bar*np.sqrt(2*c))
 
         
@@ -1348,8 +1455,8 @@ class Moments:
             lambda Mi: self.W.bar_x_Falpha_IsP(Mi, self.aero.lambda_rl, self.aero.chi_05_rl, self.aero.zeta_rl),
             M
         )
-        x_F_b_bar_kr  = x_F_is_kr_bar + 0.02*self.aero.lambda_kr*np.tan(self.aero.chi_05_kr)
-        x_F_b_bar_rl  = x_F_is_rl_bar + 0.02*self.aero.lambda_rl*np.tan(self.aero.chi_05_rl)
+        x_F_b_bar_kr  = x_F_is_kr_bar + 0.02 * self.aero.lambda_kr * np.tan(self.aero.chi_05_kr)
+        x_F_b_bar_rl  = x_F_is_rl_bar + 0.02 * self.aero.lambda_rl * np.tan(self.aero.chi_05_rl)
 
         # Сверхзвук: используем хвостовую коррекцию, дозвук: fallback к x_F_is (в метрах)
         sup = (M >= 1.0)
@@ -1362,9 +1469,10 @@ class Moments:
 
         # дозвук: просто точка x_F_is в метрах
         x_Ak   = self.geom.x_Ak
+        
         b_Ak_kr= self.geom.b_Ak_kr
-        x_F_is_kr = x_Ak + b_Ak_kr * x_F_is_kr_bar
-        x_F_is_rl = x_Ak + self.geom.b_Ak_r * x_F_is_rl_bar  # если нужна своя база для рулей
+        x_F_is_kr = self.x_a + b_Ak_kr * x_F_is_kr_bar
+        x_F_is_rl = self.x_a_rl + self.geom.b_Ak_r * x_F_is_rl_bar  # если нужна своя база для рулей
 
         x_Fi_f_I[~sup]  = x_F_is_kr[~sup]
         x_Fi_f_II[~sup] = x_F_is_rl[~sup]
@@ -1384,15 +1492,20 @@ class Moments:
             lambda Mi: self.W.bar_x_Falpha_IsP(Mi, self.aero.lambda_kr, self.aero.chi_05_kr, self.aero.zeta_kr),
             M
         )
-        x_F_is_kr     = x_Ak + b_Ak_kr * x_F_is_kr_bar  # (M,)
+        x_F_is_rl_bar = self.W.vec(
+            lambda Mi: self.W.bar_x_Falpha_IsP(Mi, self.aero.lambda_rl, self.aero.chi_05_rl, self.aero.zeta_rl),
+            M
+        )
+        x_F_is_kr     = self.x_a + self.b_a * x_F_is_kr_bar  # (M,)
+        x_F_is_rl     = self.x_a_rl + self.b_a * x_F_is_rl_bar  # (M,)
 
         f = self.W.Delta_bar_z_Falpha_iC(1.0)  # скаляр (d_bar = 1 для постоянного диаметра)
         x_F_delta_kr = x_F_is_kr - f*np.tan(self.aero.chi_05_kr)  # (M,)
-        x_F_delta_rl = x_F_is_kr - f*np.tan(self.aero.chi_05_rl)  # (M,) — примем ту же базу (для рулей вроде не нашел формулы либо впадлу было считать)
+        x_F_delta_rl = x_F_is_rl - f*np.tan(self.aero.chi_05_rl)  # (M,) — примем ту же базу (для рулей вроде не нашел формулы либо впадлу было считать)
 
         #  kaa/Kaa здесь должны быть (M,)
         x_F_a_I  = (x_F_is_kr + (kaa_kr - 1.0)*x_F_delta_kr + (Kaa_kr - kaa_kr)*x_Fi_f_I) / np.maximum(Kaa_kr, 1e-12)
-        x_F_a_II = (x_F_is_kr + (kaa_rl - 1.0)*x_F_delta_rl + (Kaa_rl - kaa_rl)*x_Fi_f_II) / np.maximum(Kaa_rl, 1e-12)
+        x_F_a_II = (x_F_is_rl + (kaa_rl - 1.0)*x_F_delta_rl + (Kaa_rl - kaa_rl)*x_Fi_f_II) / np.maximum(Kaa_rl, 1e-12)
         return x_F_a_I, x_F_a_II  # (M,), (M,)
 
 # ---------------------5. Расчет координат фокусов ЛА по углам отклонения несущих поверхностей-------------------
@@ -1473,11 +1586,11 @@ class Moments:
 
         # Линейные вклады: m_z = m_z0 + cy*угол*((x_t - xF)/L)
         m_z0 = 0 #как у макса шихана надо поменять потом
-        m_z_a      = c_y * 0 + (self.model.compute_small_angles()[0][:, None, None, None] * A) * ((x_t - xFa_b)/L)
-        m_z_deltaI = (self.model.compute_cy_delta_1_2()[0][:, None, None, None] * DI) * ((x_t - xF1_b)/L)
+        m_z_a      =  (self.model.compute_small_angles()[0][:, None, None, None] * A) * ((x_t - xFa_b)/L)
+        m_z_deltaI = 0
         m_z_deltaII= (self.model.compute_cy_delta_1_2()[1][:, None, None, None] * DII) * ((x_t - xF2_b)/L)
 
-        return m_z0 + m_z_a + m_z_deltaI + m_z_deltaII  # (M,A,DI,DII)
+        return  m_z0 + m_z_a + m_z_deltaI + m_z_deltaII  # (M,A,DI,DII)
 
 
 
@@ -1514,6 +1627,8 @@ class DataExporter:
             "c_y_sum.csv": m.assemble_c_y_sum(), # c_y для малых углов атаки
             "c_x_data.csv": m.assemble_c_x(),
             "m_z_small.csv": m.assemble_m_z_df(),
+            "polar_lilienthal.csv": m.assemble_polar_lilienthal_df(),
+            
         }
 
         if self.include_heavy:
@@ -1536,20 +1651,15 @@ if __name__ == "__main__":
     geom = Geometry()
     aero = AerodynamicParams()
     grid = FlowSetup.default()
-
+    w    = AeroBDSMWrapper()
     model = AerodynamicsModel(geom, aero, grid)  # resistance создаётся внутри модели
+    moments = Moments(grid, model  , geom, aero , w )
 
-    # Быстрые проверки (не обязательно):
-    res_interf = model.compute_interference()
-    cya_sum, c_y_small = model.compute_small_angles()
-    c_y_delta_1, c_y_delta_2 = model.compute_cy_delta_1_2()
-    big = model.compute_big_angles()
-    print("Готово: интерференция и базовые массивы посчитаны.")
-    print("Пример: c_y_small[M0, :] =", c_y_small[0, :])
+    print("Готово")
 
     if pd is not None:
-        exporter = DataExporter(model, include_heavy = True)
+        exporter = DataExporter(model, include_heavy = False)
         dfs = exporter.build_all()
-        exporter.save_all(dfs, folder=None)
+        exporter.save_all(dfs, folder= 'data')
         print("DataFrames готовы и сохранены.")
 
