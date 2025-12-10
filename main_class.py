@@ -143,7 +143,7 @@ class FlowSetup:
     def default() -> FlowSetup:
         M = np.arange(0.5, 4.1, 0.1)
         small_angles_deg = np.array([-10, -5, 0, 5, 10], dtype=float)
-        big_angles_deg = np.array([-25, -20, -15, -10,0, 5,10, 15, 20, 25], dtype=float)
+        big_angles_deg = np.array([-25, -20, -15, -5,-10,0, 5,10, 15, 20, 25], dtype=float)
         deltas_I_deg = np.array([0.0], dtype=float)  # крыло (пояс I)
         deltas_II_deg = np.arange(-25, 26, 5, dtype=float)  # рули (пояс II)
         phi_alpha = np.linspace(0, 0.436332, 10)
@@ -1504,12 +1504,12 @@ class Moments:
         x_F_is_rl     = self.x_a_rl + self.b_a * x_F_is_rl_bar  # (M,)
 
         f = self.W.Delta_bar_z_Falpha_iC(1.0)  # скаляр (d_bar = 1 для постоянного диаметра)
-        x_F_delta_kr = x_F_is_kr - f*np.tan(self.aero.chi_05_kr)  # (M,)
-        x_F_delta_rl = x_F_is_rl - f*np.tan(self.aero.chi_05_rl)  # (M,) — примем ту же базу (для рулей вроде не нашел формулы либо впадлу было считать)
+        x_F_delta_kr = x_F_is_kr - f * np.tan(self.aero.chi_05_kr)  # (M,)
+        x_F_delta_rl = x_F_is_rl - f * np.tan(self.aero.chi_05_rl)  # (M,) 
 
-        #  kaa/Kaa здесь должны быть (M,)
-        x_F_a_I  = (x_F_is_kr + (kaa_kr - 1.0)*x_F_delta_kr + (Kaa_kr - kaa_kr)*x_Fi_f_I) / np.maximum(Kaa_kr, 1e-12)
-        x_F_a_II = (x_F_is_rl + (kaa_rl - 1.0)*x_F_delta_rl + (Kaa_rl - kaa_rl)*x_Fi_f_II) / np.maximum(Kaa_rl, 1e-12)
+        
+        x_F_a_I  = (x_F_is_kr + (kaa_kr - 1.0) * x_F_delta_kr + (Kaa_kr - kaa_kr)*x_Fi_f_I) / np.maximum(Kaa_kr, 1e-12)
+        x_F_a_II = (x_F_is_rl + (kaa_rl - 1.0) * x_F_delta_rl + (Kaa_rl - kaa_rl)*x_Fi_f_II) / np.maximum(Kaa_rl, 1e-12)
         return x_F_a_I, x_F_a_II  # (M,), (M,)
 
 # ---------------------5. Расчет координат фокусов ЛА по углам отклонения несущих поверхностей-------------------
@@ -1595,6 +1595,16 @@ class Moments:
         m_z_deltaII= (self.model.compute_cy_delta_1_2()[1][:, None, None, None] * DII) * ((x_t - xF2_b)/L)
 
         return  m_z0 + m_z_a + m_z_deltaI + m_z_deltaII  # (M,A,DI,DII)
+    
+    def get_m_z_cy(self) -> float:
+        intr  = self.model.compute_interference()
+        Kaa_rl = intr["K_aa_rl"]  # (M,)
+        kaa_kr = intr["k_aa_kr"]; Kaa_kr = intr["K_aa_kr"]
+        kaa_rl = intr["k_aa_rl"]; 
+        x_t = self.geom.x_t
+        x_Fa, _ = self.x_F_a_I_II(kaa_kr, Kaa_kr, kaa_rl, Kaa_rl)
+        L: float = 3.906
+        return -(x_Fa - x_t / L)
 
 
 #================================ СИМУЛЯЦИЯ ПОЛЕТА================================================
@@ -1839,8 +1849,11 @@ if __name__ == "__main__":
     w    = AeroBDSMWrapper()
     model = AerodynamicsModel(geom, aero, grid)  # resistance создаётся внутри модели
     moments = Moments(grid, model  , geom, aero , w )
-
+    m_z_cy = moments.get_m_z_cy()
     print("Готово")
+    print(60*'=')
+    print('Запас статической устойчивости:')
+    print(m_z_cy)
 
     if pd is not None:
         exporter = DataExporter(model, include_heavy = False)

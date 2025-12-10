@@ -549,9 +549,9 @@ def main():
     # plt.tight_layout()
     # plt.show()
     
-    # # 14. Визуализация больших углов и дельт
-    # print("\n14. Визуализация больших углов и дельт...")
-    # visualize_big_angles_delta('data/c_y_sum_big_delta.csv')
+    # 14. Визуализация больших углов и дельт
+    print("\n14. Визуализация больших углов и дельт...")
+    visualize_big_angles_delta('data/c_y_sum_big_delta.csv')
     
     #####15. Визуализация момента m_z
     print("\n15. Визуализация момента m_z...")
