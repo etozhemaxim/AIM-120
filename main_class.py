@@ -1604,7 +1604,7 @@ class Moments:
         x_t = self.geom.x_t
         x_Fa, _ = self.x_F_a_I_II(kaa_kr, Kaa_kr, kaa_rl, Kaa_rl)
         L: float = 3.906
-        return -(x_Fa - x_t / L)
+        return -((x_Fa - x_t )/ L)
 
 
 #================================ СИМУЛЯЦИЯ ПОЛЕТА================================================
