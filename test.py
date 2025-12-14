@@ -1,19 +1,14 @@
 from __future__ import annotations
-import datetime  
+
 import math
 from dataclasses import dataclass
 from typing import Dict, Tuple, Optional
-from scipy import interpolate
-from atmosphere import atmo
 
-from numba import njit
 
 import numpy as np
 
-# Внешняя библиотека проекта
 import AeroBDSM
 
-# Опционально для сборки таблиц и (локального) сохранения CSV
 try:
     import pandas as pd
 except ImportError:
@@ -326,7 +321,7 @@ class InterferenceCalculator:
 # ========= 4) Основная модель =========
 
 class AerodynamicsModel:
-    def __init__(self, geom: Geometry, aero: AerodynamicParams, grid: FlowSetup, resistance: Optional['Resistance']=None, overload: Optional['Overload']=None, moments: Optional['Moments']=None, w: Optional[' AeroBDSMWrapper']=None ):
+    def __init__(self, geom: Geometry, aero: AerodynamicParams, grid: FlowSetup, resistance: Optional['Resistance']=None):
         self.g = geom
         self.a = aero
         self.grid = grid
@@ -339,22 +334,8 @@ class AerodynamicsModel:
         self.d_II = self.a.d_II if self.a.d_II is not None else self.g.D
 
         # если не передали — создаём сами, передавая self
-        self.w = w or  AeroBDSMWrapper()
         self.resistance = resistance or Resistance(self.g, self.a, self.grid, self)
-        self.moments = moments or Moments(self.grid, self,  self.g ,  self.a, self.w  )
-        
-        self.overload = overload
 
-
-    def get_n_y_rasp(self) -> np.ndarray:
-        """Возвращает располагаемую перегрузку"""
-        if self.overload is None:
-            # Создаем временный объект
-            self.overload = Overload(self, 
-                                    Moments(self.grid, self, self.g, self.a, AeroBDSMWrapper),
-                                    self.g, 
-                                    self.grid)
-        return self.overload.get_n_y_rasp()
     # ---- AeroBDSM векторно ----
 
     def c_ya_f(self) -> np.ndarray:
@@ -1145,123 +1126,6 @@ class AerodynamicsModel:
         })
 
         return df
-    
-
-    def assemble_n_y_rasp_df(self, use_big_angles: bool = False) -> 'pd.DataFrame':
-        """
-        Собирает данные располагаемой перегрузки в виде таблицы.
-        
-        Parameters:
-        -----------
-        use_big_angles : bool
-            Если True, использует большие углы атаки, иначе - малые
-        
-        Returns:
-        --------
-        pd.DataFrame
-            Колонки: Mach, alpha_deg, delta_I_deg, delta_II_deg, n_y_rasp
-        """
-        if pd is None:
-            raise RuntimeError("pandas не установлен.")
-        
-        # Получаем массив с располагаемой перегрузкой
-        n_y_rasp = self.get_n_y_rasp()  # (M, A, DI, DII)
-        
-        # Выбираем, какие углы использовать
-        if use_big_angles:
-            angles = self.grid.big_angles_deg
-            angles_name = "big"
-        else:
-            angles = self.grid.small_angles_deg
-            angles_name = "small"
-        
-        # Создаем списки для DataFrame
-        M_list, alpha_list, delta_I_list, delta_II_list, n_y_list = [], [], [], [], []
-        
-        # Заполняем списки значениями из массива
-        for i, M in enumerate(self.grid.M):
-            for ai, alpha in enumerate(angles):
-                for di, dI in enumerate(self.grid.deltas_I_deg):
-                    for dj, dII in enumerate(self.grid.deltas_II_deg):
-                        M_list.append(M)
-                        alpha_list.append(alpha)
-                        delta_I_list.append(dI)
-                        delta_II_list.append(dII)
-                        n_y_list.append(n_y_rasp[i, ai, di, dj])
-        
-        # Создаем DataFrame
-        df = pd.DataFrame({
-            "Mach": M_list,
-            "alpha_deg": alpha_list,
-            "delta_I_deg": delta_I_list,
-            "delta_II_deg": delta_II_list,
-            "n_y_rasp": n_y_list
-        })
-        
-        # Добавляем информацию о типе углов в имя файла (опционально)
-        df.attrs['angle_type'] = angles_name
-        
-        return df
-    
-    def assemble_K_df(self, use_big_angles: bool = True) -> 'pd.DataFrame':
-        """
-        Собирает данные аэродинамического качества K = C_y / C_x в виде таблицы.
-        
-        Parameters:
-        -----------
-        use_big_angles : bool
-            Если True, использует большие углы атаки, иначе - малые
-        
-        Returns:
-        --------
-        pd.DataFrame
-            Колонки: Mach, alpha_deg, delta_I_deg, delta_II_deg, K
-        """
-        if pd is None:
-            raise RuntimeError("pandas не установлен.")
-        
-        # Получаем массив с аэродинамическим качеством
-        K_array = self.moments.get_K()  # (M, A, DI, DII)
-        
-        # Выбираем, какие углы использовать
-        if use_big_angles:
-            angles = self.grid.big_angles_deg
-            angles_name = "big"
-        else:
-            angles = self.grid.small_angles_deg
-            angles_name = "small"
-        
-        # Создаем списки для DataFrame
-        M_list, alpha_list, delta_I_list, delta_II_list, K_list = [], [], [], [], []
-        
-        # Заполняем списки значениями из массива
-        for i, M in enumerate(self.grid.M):
-            for ai, alpha in enumerate(angles):
-                for di, dI in enumerate(self.grid.deltas_I_deg):
-                    for dj, dII in enumerate(self.grid.deltas_II_deg):
-                        M_list.append(M)
-                        alpha_list.append(alpha)
-                        delta_I_list.append(dI)
-                        delta_II_list.append(dII)
-                        # Добавляем защиту от деления на ноль
-                        K_value = K_array[i, ai, di, dj]
-                        if np.isinf(K_value) or np.isnan(K_value):
-                            K_value = 0.0
-                        K_list.append(K_value)
-        
-        # Создаем DataFrame
-        df = pd.DataFrame({
-            "Mach": M_list,
-            "alpha_deg": alpha_list,
-            "delta_I_deg": delta_I_list,
-            "delta_II_deg": delta_II_list,
-            "K": K_list
-        })
-        
-        # Добавляем информацию о типе углов
-        df.attrs['angle_type'] = angles_name
-        
-        return df
 
 
 # ========= 5) Глава IV "Лобовое сопротивление " =========
@@ -1469,13 +1333,12 @@ class Resistance :
 
 # =============== 5) Глава V "Моменты тангажа и рыскания" =================
 class Moments:
-    def __init__(self , grid: FlowSetup, model : AerodynamicsModel , geom: Geometry, aero: AerodynamicParams , w : AeroBDSMWrapper, resistance: Optional['Resistance']=None):
+    def __init__(self , grid: FlowSetup, model : AerodynamicsModel , geom: Geometry, aero: AerodynamicParams , w : AeroBDSMWrapper):
         self.grid = grid
         self.model = model 
         self.geom = geom
         self.aero = aero
         self.W = w 
-        self.resistance = resistance or Resistance(self.geom, self.aero, self.grid, self.model)
         # расчет геометрии для mz: 5.13 - 5.15
         self.chi_0 = self.geom.chi_0
         self.l = self.geom.l_raszmah_kr
@@ -1608,7 +1471,7 @@ class Moments:
         
         b_Ak_kr= self.geom.b_Ak_kr
         x_F_is_kr = self.x_a + b_Ak_kr * x_F_is_kr_bar
-        x_F_is_rl = self.x_a_rl + self.geom.b_Ak_r * x_F_is_rl_bar  # если нужна своя база для рулей
+        x_F_is_rl = self.x_a_rl + self.geom.b_Ak_r * x_F_is_rl_bar
 
         x_Fi_f_I[~sup]  = x_F_is_kr[~sup]
         x_Fi_f_II[~sup] = x_F_is_rl[~sup]
@@ -1655,10 +1518,9 @@ class Moments:
         kaa_kr = intr["k_aa_kr"]; Kaa_kr = intr["K_aa_kr"]
         kaa_rl = intr["k_aa_rl"]; Kaa_rl_all = intr["K_aa_rl"]
 
-        # x_F_delta1 от формул 5.39–5.40, но с k_delta/K_delta
+        # x_F_delta1 от формул 5.39–5.40
         x_F_delta1, _ = self.x_F_a_I_II(k_d0_kr, K_d0_kr, k_d0_rl, K_d0_rl)
 
-        # x_F_a_II для "обычных" kaa/Kaa
         _, x_F_a_II = self.x_F_a_I_II(kaa_kr, Kaa_kr, kaa_rl, Kaa_rl_all)
 
         c_y_delta_1, _ = self.model.compute_cy_delta_1_2()  # (M,), (M,)
@@ -1728,42 +1590,6 @@ class Moments:
 
         return  m_z0 + m_z_a + m_z_deltaI + m_z_deltaII  # (M,A,DI,DII)
     
-
-    def test(self) -> Tuple[np.ndarray,np.ndarray]:
-        """
-        Моменты по малым углам. Возвращает (M,A,DI,DII)
-        m_z = m_z0 + c_y * ((x_t - x_F)/L), где x_F берется соответственно:
-        - по α: x_F_a (тут: фюзеляжный фокус, можно также учесть пояса)
-        - по δ_I: x_F_delta_I
-        - по δ_II: x_F_delta_II
-        """
-        # углы
-        A   = np.radians(self.grid.small_angles_deg)[None, :, None, None]
-        DI  = np.radians(self.grid.deltas_I_deg)[None, None, :, None]
-        DII = np.radians(self.grid.deltas_II_deg)[None, None, None, :]
-
-        # подъемная сила (линейная)
-        c_y = self.model.compute_c_y_sum()  # (M,A,DI,DII)
-
-        # фокусы
-        x_Fa = self.x_Fa_f()  # (M,1)
-        x_F_delta_I, x_F_delta_II = self.x_F_delta_I_II()  # (M,), (M,)
-
-        x_t = self.geom.x_t
-        L   = self.geom.l_f
-
-        # Растянем в тензорные формы
-        xFa_b  = x_Fa[:, None, None, :] if x_Fa.ndim == 2 else x_Fa[:, None, None, None]  # (M,1,1,1)
-        xF1_b  = x_F_delta_I[:, None, None, None]  # (M,1,1,1)
-        xF2_b  = x_F_delta_II[:, None, None, None]
-
-        # Линейные вклады: m_z = m_z0 + cy*угол*((x_t - xF)/L)
-        m_z0 = 0 #как у макса шихана надо поменять потом
-        m_z_a      =  (self.model.compute_small_angles()[0][:, None, None, None] * A) * ((x_t - xFa_b)/L)
-        m_z_deltaI = 0
-        m_z_deltaII= (self.model.compute_cy_delta_1_2()[1][:, None, None, None] * DII) * ((x_t - xF2_b)/L)
-        return   m_z_a , m_z_deltaII  # (M,A,DI,DII)
-    
     def get_m_z_cy(self) -> float:
         intr  = self.model.compute_interference()
         Kaa_rl = intr["K_aa_rl"]  # (M,)
@@ -1771,596 +1597,8 @@ class Moments:
         kaa_rl = intr["k_aa_rl"]; 
         x_t = self.geom.x_t
         x_Fa, _ = self.x_F_a_I_II(kaa_kr, Kaa_kr, kaa_rl, Kaa_rl)
-        L: float = 3.906
+        L: float = self.geom.l_f
         return -((x_Fa - x_t )/ L)
-    #качество
-    def get_K(self) -> np.ndarray:
-        c_y_delta_values = self.model.compute_big_angles()
-        c_y = c_y_delta_values['c_y_sum_big']
-
-        c_x  = self.resistance.c_x_tensor()
-
-        return c_y / c_x
-
-
-
-class CxLUT:
-    """
-    Простая LUT для Cx(M, alpha_deg, delta_II_deg) при delta_I_deg = 0.
-    Делает трилинейную интерполяцию по (M, alpha, dII).
-    """
-    def __init__(self, df: pd.DataFrame):
-        # фильтруем только delta_I_deg == 0
-        df0 = df[df['delta_I_deg'] == 0.0].copy()
-        if df0.empty:
-            raise ValueError("В таблице Cx нет строк с delta_I_deg == 0")
-
-        # оси (уникальные, отсортированные)
-        self.M_axis     = np.sort(df0['Mach'].unique())
-        self.alpha_axis = np.sort(df0['alpha_deg'].unique())
-        self.dII_axis   = np.sort(df0['delta_II_deg'].unique())
-
-        # создаём куб значений Cx[M, A, DII]
-        M_len, A_len, D_len = len(self.M_axis), len(self.alpha_axis), len(self.dII_axis)
-        C = np.full((M_len, A_len, D_len), np.nan, dtype=float)
-
-        # заполняем куб по строкам
-        m_index = {val: i for i, val in enumerate(self.M_axis)}
-        a_index = {val: i for i, val in enumerate(self.alpha_axis)}
-        d_index = {val: i for i, val in enumerate(self.dII_axis)}
-
-        for _, row in df0.iterrows():
-            i = m_index[row['Mach']]
-            j = a_index[row['alpha_deg']]
-            k = d_index[row['delta_II_deg']]
-            C[i, j, k] = row['c_x']
-
-        # проверим есть ли пропуски
-        if np.isnan(C).any():
-            # Можно попытаться заполнить пропуски, но лучше предупредить.
-            # Для простоты заполним ближайшими соседями по маске.
-            # Здесь ограничимся заменой nan на ближайшее не-nan в плоскости осей.
-            # Минимальное решение: просто линейная интерполяция невозможна без SciPy;
-            # поэтому заменим nan на среднее ненулевых соседей, если очень нужно.
-            # Для стабильности просто заменим все nan на ближайшее значение в плоскости M.
-            # Но лучше убедиться, что таблица полная.
-            # Здесь мы хотя бы не упадём:
-            C = np.nan_to_num(C, nan=np.nanmean(C[np.isfinite(C)]) if np.isfinite(C).any() else 0.0)
-
-        self.C = C
-
-    def _idx_pair(self, axis: np.ndarray, x: float) -> tuple[int, int, float]:
-        """
-        Для точки x на оси axis найдём индексы (i0, i1) и локальную долю t в [0,1] для линейной интерполяции.
-        Если x вне диапазона — клиппинг в края (интерполяции нет).
-        """
-        if x <= axis[0]:
-            return 0, 0, 0.0
-        if x >= axis[-1]:
-            return len(axis) - 1, len(axis) - 1, 0.0
-        # найдём правый индекс (вставки)
-        r = int(np.searchsorted(axis, x, side='right'))
-        l = r - 1
-        x0, x1 = axis[l], axis[r]
-        t = 0.0 if x1 == x0 else (x - x0)/(x1 - x0)
-        return l, r, float(t)
-
-    def get(self, M: float, alpha_deg: float, delta_II_deg: float) -> float:
-        """
-        Трилинейная интерполяция Cx по (M, alpha, dII) с клиппингом по краям.
-        """
-        i0, i1, tM = self._idx_pair(self.M_axis,     M)
-        j0, j1, tA = self._idx_pair(self.alpha_axis, alpha_deg)
-        k0, k1, tD = self._idx_pair(self.dII_axis,   delta_II_deg)
-
-        # берём 8 вершин куба
-        C000 = self.C[i0, j0, k0]
-        C001 = self.C[i0, j0, k1]
-        C010 = self.C[i0, j1, k0]
-        C011 = self.C[i0, j1, k1]
-        C100 = self.C[i1, j0, k0]
-        C101 = self.C[i1, j0, k1]
-        C110 = self.C[i1, j1, k0]
-        C111 = self.C[i1, j1, k1]
-
-        # трёхмерная линейная интерполяция
-        C00 = C000*(1-tD) + C001*tD
-        C01 = C010*(1-tD) + C011*tD
-        C10 = C100*(1-tD) + C101*tD
-        C11 = C110*(1-tD) + C111*tD
-
-        C0 = C00*(1-tA) + C01*tA
-        C1 = C10*(1-tA) + C11*tA
-
-        Cx = C0*(1-tM) + C1*tM
-        return float(Cx)
-
- # Загрузка CSV с Cx
-df_cx = pd.read_csv('data/c_x_data.csv')  # ваш путь/файл; структура столбцов как вы показали
-
-# Строим LUT по delta_I_deg == 0
-cx_lut = CxLUT(df_cx)       
-#================================ СИМУЛЯЦИЯ ПОЛЕТА================================================
-
-# -------- Приветствие и стартовое время --------
-# создаем объект атмосферы
-atm = atmo()                         # инициализация вашей атмосферы
-# фиксируем и выводим время старта
-start = datetime.datetime.now()      # берем текущее время
-print('Время старта: ' + str(start)) # печатаем время старта
-
-# -------- Параметры расчёта --------
-calcParams = np.array([0.1, 15])     # массив [dt, r_por]: шаг по времени и радиус поражения
-calcParams = calcParams.astype('float64')  # приводим к типу float64
-
-# -------- Гравитация --------
-g = 9.80665                          # ускорение свободного падения, м/с^2
-
-# -------- Словарь результатов --------
-result = dict({                      # здесь будем копить всё, что посчитали
-    't': [],                         # время
-    'Theta_r': [],                   # угол ракеты
-    'v_r': [],                       # скорость ракеты
-    'x_r': [],                       # координата X ракеты
-    'y_r': [],                       # координата Y ракеты
-    'n_xa_r': [],                    # продольная перегрузка ракеты
-    'n_ya_r': [],                    # поперечная перегрузка ракеты
-    'P_r': [],                       # тяга двигателя
-    'mass_r': [],                    # масса ракеты
-    'Theta_c': [],                   # угол цели
-    'v_c': [],                       # скорость цели
-    'x_c': [],                       # координата X цели
-    'y_c': [],                       # координата Y цели
-    'n_xa_c': [],                    # продольная перегрузка цели (задаётся)
-    'n_ya_c': [],                    # поперечная перегрузка цели (задаётся)
-    'Theta_n': [],                   # угол носителя (нос)
-    'v_n': [],                       # скорость носителя
-    'x_n': [],                       # координата X носителя
-    'y_n': [],                       # координата Y носителя
-    'n_xa_n': [],                    # продольная перегрузка носителя (задаётся)
-    'n_ya_n': [],                    # поперечная перегрузка носителя (задаётся)
-    'switch_time': 0                 # момент переключения режима двигателя
-})
-
-# -------- Начальные условия (вектор inits) --------
-# inits: [x_r0, y_r0, x_c0, y_c0, Theta_c0, v_c0, Theta_r0, v_r0, Theta_n0, v_n0,
-#         mu_0, eta_0, k_m, k_p, m_start, m_bch, diameter, I_ud, length, (2 свободных)]
-inits = np.array([
-    0,       # x_r0: начальная X ракеты [м]
-    10000,    # y_r0: начальная Y ракеты [м]
-    30000,  # x_c0: начальная X цели [м]
-    10100,   # y_c0: начальная Y цели [м]
-    np.deg2rad(10),       # Theta_c0: начальный угол цели [рад]
-    600,    # v_c0: скорость цели [м/с] (отрицательная — летит "влево")
-    np.deg2rad(10),    # Theta_r0: начальный угол ракеты [рад] (-999 = рассчитать по геометрии)
-    111,     # v_r0: скорость ракеты [м/с]
-    np.deg2rad(10),       # Theta_n0: начальный угол носителя [рад]
-    700,     # v_n0: скорость носителя [м/с]
-    0.33,       # mu_0: относительный запас топлива 
-    1.22,       # eta_0: тяговооружённость (0 = без тяги)
-    1,       # k_m: распределение массы топлива по режимам
-    0.5,       # k_p: отношение тяг режимов
-    146.64,     # m_start: стартовая масса [кг]
-    97.27,      # m_bch: масса БЧ и прочей аппаратуры [кг]
-    0.178,    # diameter: диаметр [м]+
-    10000,    # I_ud: удельный импульс [м/с]
-    3.906,     # length: длина [м]
-    0, 0     # свободные
-], dtype='float64')
-beta : float = 1.3
-
-# -------- Ограничения --------
-limits = np.array([
-    300,  # t_max: макс. время [с]
-    40,   # n_ya_r_max: макс. поперечная перегрузка ракеты
-    0     # y_r_min: минимальная высота [м]
-], dtype='float64')
-
-# -------- Параметры метода наведения --------
-MethodData = np.array([
-    8,              # метод наведения (8 = пропорциональное сближение)
-    np.deg2rad(10), # phi_upr (не используется здесь)
-    np.deg2rad(0), # Theta_r (стартовый угол, если не -999)
-    4,              # k: коэффициент для PN
-    3,              # lambda (не используется)
-    0.00035         # C (не используется)
-], dtype='float64')
-
-# -------- Задаваемые перегрузки для цели и носителя --------
-NRCData = np.array([
-    0,  # n_xa_r_pot (не используется — продольная ракеты считается)
-    0,  # n_xa_c_pot: продольная цели
-    1,  # n_ya_c_pot: поперечная цели
-    0,  # n_xa_n_pot: продольная носителя
-    1   # n_ya_n_pot: поперечная носителя
-], dtype='float64')
-
-# -------- Для “линий видимости” (не обязательно) --------
-VisionLines = dict({
-    't': [],
-    'x_r': [], 'y_r': [],
-    'x_c': [], 'y_c': [],
-    'x_n': [], 'y_n': []
-})
-
-# ------------------- Ускоряемые функции движения -------------------
-
-@njit(fastmath=True)
-def r(x_r, y_r, x_c, y_c):
-    return np.sqrt((y_c - y_r) ** 2 + (x_c - x_r) ** 2)  # расстояние между ракетой и целью
-
-@njit(fastmath=True)
-def dot_r(x_r, y_r, x_c, y_c, v_r, v_c, Theta_r, Theta_c):
-    r_rc = r(x_r, y_r, x_c, y_c)                         # текущее расстояние
-    if r_rc == 0.0:                                      # защита от деления на 0
-        return 0.0
-    Delta_x = x_c - x_r                                  # разность по x
-    Delta_y = y_c - y_r                                  # разность по y
-    Delta_dot_x = v_c * np.cos(Theta_c) - v_r * np.cos(Theta_r)  # относительная скорость по x
-    Delta_dot_y = v_c * np.sin(Theta_c) - v_r * np.sin(Theta_r)  # относительная скорость по y
-    return (Delta_y * Delta_dot_y + Delta_x * Delta_dot_x) / r_rc # производная расстояния
-
-@njit(fastmath=True)
-def epsilon(x_r, y_r, x_c, y_c):
-    # угол линии визирования (упрощенно, через atan)
-    if (x_c - x_r > 0):
-        return np.atan((y_c - y_r) / (x_c - x_r))
-    elif ((x_c - x_r < 0) and (y_c - y_r >= 0)):
-        return np.atan((y_c - y_r) / (x_c - x_r)) + np.pi
-    elif ((x_c - x_r < 0) and (y_c - y_r < 0)):
-        return np.atan((y_c - y_r) / (x_c - x_r)) - np.pi
-    elif ((x_c == x_r) and (y_c >= y_r)):
-        return np.pi / 2
-    else:
-        return -np.pi / 2
-
-@njit(fastmath=True)
-def dot_epsilon(x_r, y_r, x_c, y_c, v_r, v_c, Theta_r, Theta_c):
-    r_rc = r(x_r, y_r, x_c, y_c)                         # расстояние
-    if r_rc == 0.0:
-        return 0.0
-    Delta_x = x_c - x_r                                  # разности координат
-    Delta_y = y_c - y_r
-    Delta_dot_x = v_c * np.cos(Theta_c) - v_r * np.cos(Theta_r)  # относ. скорость
-    Delta_dot_y = v_c * np.sin(Theta_c) - v_r * np.sin(Theta_r)
-    # производная угла линии визирования
-    return (Delta_x * Delta_dot_y - Delta_y * Delta_dot_x) / (r_rc ** 2)
-
-@njit(fastmath=True)
-def dpar_i(n_xa_i, v_i, Theta_i):
-    # дифференциалы: производная скорости и координат
-    dv_i = (n_xa_i - np.sin(Theta_i)) * g                # изменение скорости
-    dx_i = v_i * np.cos(Theta_i)                         # изменение x
-    dy_i = v_i * np.sin(Theta_i)                         # изменение y
-    return dv_i, dx_i, dy_i
-
-@njit(fastmath=True)
-def par_i1(Theta_i, dTheta_i, dt, v_i, dv_i, x_i, dx_i, y_i, dy_i):
-    # шаг вперед методом Эйлера
-    Theta_i1 = Theta_i + dTheta_i * dt                   # новый угол
-    v_i1 = v_i + dv_i * dt                               # новая скорость
-    x_i1 = x_i + dx_i * dt                               # новый x
-    y_i1 = y_i + dy_i * dt                               # новый y
-    return Theta_i1, v_i1, x_i1, y_i1
-
-@njit(fastmath=True)
-def value_cx(mah):
-    # аппроксимация Cx по числу Маха (как в dz_pro)
-    if mah < 0.61:
-        return 0.308
-    if mah >= 0.61 and mah <= 1:
-        return 0.505 * (mah - 0.61) ** 2.31 + 0.308
-    if mah >= 1 and mah < 1.4:
-        return 0.4485 * ((mah - 1) ** 0.505) * (np.exp(-5.68 * (mah - 1))) + 0.551
-    if mah >= 1.4 and mah < 4:
-        return mah / (0.356 * mah ** 2 + 2.237 * mah - 1.4)
-    return 0.302
-
-@njit(fastmath=True)
-def n_xa_tiaga(X_a, P, alf, m_r):
-    # продольная перегрузка (тяга - лобовое) / вес
-    return (-X_a + P) / (m_r * g)
-
-@njit(fastmath=True)
-def n_ya_pot_ProportionalNavConst(v_r, dot_epsilon_rc, Theta_r, k):
-    # потребная поперечная перегрузка по PN
-    return (v_r / g * k * dot_epsilon_rc + np.cos(Theta_r))
-
-# -------- Перевод кода возврата в текст --------
-def RC(ResCode):
-    if ResCode == 0: return 'Успешное поражение цели'
-    if ResCode == 1: return 'Столкновение ракеты с землёй'
-    if ResCode == 2: return 'Превышение максимальной перегрузки'
-    if ResCode == 4: return 'Превышено максимальное время полёта ракеты'
-    if ResCode == 5: return 'Закончилось топливо'
-    return ''
-
-# ==================== Основная функция расчёта ====================
-
-def CalcTrajectory(calcParams, inits, limits, MethodData, NRCData, result):
-    dt = calcParams[0]                              # шаг по времени [с]
-    # БЫЛО: N_max = limits[0] / dt  # float -> ошибка
-    # СТАЛО (с запасом на последний шаг):
-    N_max = int(np.ceil(limits[0] / dt)) + 1        # целое число шагов
-
-    # создаём массивы для истории по времени (размер N_max)
-    t = np.zeros(N_max, dtype=float)                # время
-    Theta_r = np.zeros(N_max, dtype=float)          # угол ракеты
-    v_r = np.zeros(N_max, dtype=float)              # скорость ракеты
-    x_r = np.zeros(N_max, dtype=float)              # X ракеты
-    y_r = np.zeros(N_max, dtype=float)              # Y ракеты
-    n_xa_r = np.zeros(N_max, dtype=float)           # продольная перегрузка ракеты
-    n_ya_r = np.zeros(N_max, dtype=float)           # поперечная перегрузка ракеты
-    P_r = np.zeros(N_max, dtype=float)              # тяга двигателя
-    mass_r = np.zeros(N_max, dtype=float)           # масса ракеты
-
-    Theta_c = np.zeros(N_max, dtype=float)          # угол цели
-    v_c = np.zeros(N_max, dtype=float)              # скорость цели
-    x_c = np.zeros(N_max, dtype=float)              # X цели
-    y_c = np.zeros(N_max, dtype=float)              # Y цели
-    n_xa_c = np.zeros(N_max, dtype=float)           # продольная перегрузка цели
-    n_ya_c = np.zeros(N_max, dtype=float)           # поперечная перегрузка цели
-
-    Theta_n = np.zeros(N_max, dtype=float)          # угол носителя
-    v_n = np.zeros(N_max, dtype=float)              # скорость носителя
-    x_n = np.zeros(N_max, dtype=float)              # X носителя
-    y_n = np.zeros(N_max, dtype=float)              # Y носителя
-    n_xa_n = np.zeros(N_max, dtype=float)           # продольная перегрузка носителя
-    n_ya_n = np.zeros(N_max, dtype=float)           # поперечная перегрузка носителя
-    c_xa = np.zeros(N_max,dtype = float)
-
-    # списки для точек режимов двигателя (для картинки)
-    flight_mode_raz_x = []              # точки первого режима по X
-    flight_mode_dva_x = []              # точки второго режима по X
-    flight_mode_raz_y = []              # точки первого режима по Y
-    flight_mode_dva_y = []              # точки второго режима по Y
-
-    # начальные значения из inits
-    t[0] = 0
-    Theta_r[0] = inits[6]               # начальный угол ракеты
-    v_r[0] = inits[7]                   # скорость ракеты
-    x_r[0] = inits[0]                   # X ракеты
-    y_r[0] = inits[1]                   # Y ракеты
-
-    Theta_c[0] = inits[4]               # угол цели
-    v_c[0] = inits[5]                   # скорость цели
-    x_c[0] = inits[2]                   # X цели
-    y_c[0] = inits[3]                   # Y цели
-
-    Theta_n[0] = inits[8]               # угол носителя
-    v_n[0] = inits[9]                   # скорость носителя
-    x_n[0] = inits[0]                   # X носителя (старт совпадает с ракетой)
-    y_n[0] = inits[1] - 1               # Y носителя (чуть ниже)
-
-    # параметры двигателя из inits
-    mu_0 = inits[10]                    # относительный запас топлива
-    eta_0 = inits[11]                   # тяговооружённость
-    k_m = inits[12]                     # распределение массы
-    k_p = inits[13]                     # отношение тяг режимов
-    m_start = inits[14]                 # стартовая масса
-    m_bch = inits[15]                   # масса БЧ
-    diametr = inits[16]                 # диаметр
-    I_ud = inits[17]                    # удельный импульс
-    dlina = inits[18]                   # длина
-
-
-    # топливо и тяга по режимам
-     # топливо 2-й режим
-    m_0 = m_bch / (1 - beta * mu_0) 
-    m_fuel = m_start - m_bch   # масса топлива (общая)
-    m_fuel_raz = m_fuel / (1 + k_m)     # топливо 1-й режим
-    m_fuel_dva = m_fuel_raz * k_m                 # начальная масса ракеты
-    S_a = 0.8 * diametr ** 2 * np.pi / 4   # эффективная площадь сопла/донного сечения
-    tiaga_raz = eta_0 * m_0 * g         # тяга 1-го режима
-    tiaga_dva = tiaga_raz * k_p         # тяга 2-го режима
-    G_raz = tiaga_raz / I_ud            # расход топлива на 1-м режиме
-    G_dva = tiaga_dva / I_ud            # расход на 2-м режиме
-    switch_time = 0                     # время переключения режима
-    m_00 = m_0                          # запас (необязательно)
-                        # если у вас нет управления рулями, берём 0; иначе подставьте свой ряд
-
-    # если угол ракеты -999, выровнять по ЛВ (линии визирования)
-    if (Theta_r[0] == -999):
-        epsilon_rc = epsilon(x_r[0], y_r[0], x_c[0], y_c[0])             # угол линии визирования
-        Theta_r[0] = epsilon_rc - np.asin((v_c[0] / v_r[0]) * np.sin(epsilon_rc - Theta_c[0])) # угол наведения
-
-    # главный цикл интегрирования по времени
-    i = 0                               # текущий шаг
-    while (t[i] <= limits[0]): 
-        # 1) аэродинамика: число Маха и Cx из LUT
-        M = v_r[i] / 340.0                            # число Маха
-        alpha_deg = np.degrees(Theta_r[i])            # угол ракеты в градусах
-        delta_II_deg = 0.0                            # если рулём не управляете
-        Cx_val = cx_lut.get(M, alpha_deg, delta_II_deg)
-        
-        # сила лобового сопротивления
-        X_a = Cx_val * atm.rho(y_r[i]) * v_r[i]**2 * S_a / 2.0
-        c_xa[i] = Cx_val
-        # выбираем текущую тягу P в зависимости от режима (по остатку топлива)
-        if m_fuel >= m_fuel_dva and m_fuel_raz != 0:
-            P = tiaga_raz + (atm.p(0) - atm.p(y_r[i])) * S_a  # тяга 1-го режима + перепад давлений
-        else:
-            P = tiaga_dva + (atm.p(0) - atm.p(y_r[i])) * S_a  # тяга 2-го режима + перепад давлений
-
-        n_xa_r[i] = n_xa_tiaga(X_a, P, 0.0, m_0)  # продольная перегрузка ракеты
-
-        # 2) задаем перегрузки цели и носителя (из NRCData)
-        n_xa_c[i] = NRCData[1]         # продольная цели
-        n_ya_c[i] = NRCData[2]         # поперечная цели
-        n_xa_n[i] = NRCData[3]         # продольная носителя
-        n_ya_n[i] = NRCData[4]         # поперечная носителя
-
-        # 3) относительное движение: r и производные
-        r_rc = r(x_r[i], y_r[i], x_c[i], y_c[i])  # расстояние до цели
-        if (r_rc == 0):                           # защита от деления на 0
-            dot_r_rc = 0
-            dot_epsilon_rc = 0
-        else:
-            dot_r_rc = dot_r(x_r[i], y_r[i], x_c[i], y_c[i], v_r[i], v_c[i], Theta_r[i], Theta_c[i]) # производная расстояния
-            dot_epsilon_rc = dot_epsilon(x_r[i], y_r[i], x_c[i], y_c[i], v_r[i], v_c[i], Theta_r[i], Theta_c[i]) # производная угла ЛВ
-
-        # 4) потребная перегрузка по PN (если метод = 8)
-        if i >= 1:
-            if MethodData[0] == 8:
-                k = MethodData[3]                             # коэффициент 
-                n_ya_r[i] = n_ya_pot_ProportionalNavConst(v_r[i], dot_epsilon_rc, Theta_r[i], k)  # требуемая n_ya
-
-        # 5) проверка условий завершения
-        if (r_rc < calcParams[1]):            # если ближе радиуса поражения
-            returnCode = 0                    # успех
-            break
-        else:
-            if (abs(n_ya_r[i]) > limits[1]):  # превышение поперечной перегрузки
-                returnCode = 2
-                break
-            elif (y_r[i] <= limits[2] and i >= 1):  # упали на землю
-                returnCode = 1
-                break
-            if m_fuel <= 0:                   # топливо закончилось
-                returnCode = 5
-                break
-
-        # 6) дифференциалы (Эйлер)
-        dTheta_r = 0
-        if (v_r[i] != 0):                     # если есть скорость, угловая скорость PN
-            k = 4                             # упрощенно: dTheta_r = k * dot_epsilon_rc
-            dTheta_r = k * dot_epsilon_rc
-
-        dv_r, dx_r, dy_r = dpar_i(n_xa_r[i], v_r[i], Theta_r[i])   # продольное уравнение ракеты
-
-        dTheta_c = 0
-        if v_c[i] != 0:                                                 # поворот цели (если надо)
-            dTheta_c = (n_ya_c[i] - np.cos(Theta_c[i])) * g / v_c[i]
-        dv_c, dx_c, dy_c = dpar_i(n_xa_c[i], v_c[i], Theta_c[i])        # движение цели
-
-        dTheta_n = 0
-        if v_n[i] != 0:                                                 # поворот носителя (если надо)
-            dTheta_n = (n_ya_n[i] - np.cos(Theta_n[i])) * g / v_n[i]
-        dv_n, dx_n, dy_n = dpar_i(n_xa_n[i], v_n[i], Theta_n[i])        # движение носителя
-
-        # 7) шаг вперед (Эйлер)
-        Theta_r[i + 1], v_r[i + 1], x_r[i + 1], y_r[i + 1] = par_i1(Theta_r[i], dTheta_r, dt, v_r[i], dv_r, x_r[i], dx_r, y_r[i], dy_r)
-        Theta_c[i + 1], v_c[i + 1], x_c[i + 1], y_c[i + 1] = par_i1(Theta_c[i], dTheta_c, dt, v_c[i], dv_c, x_c[i], dx_c, y_c[i], dy_c)
-        Theta_n[i + 1], v_n[i + 1], x_n[i + 1], y_n[i + 1] = par_i1(Theta_n[i], dTheta_n, dt, v_n[i], dv_n, x_n[i], dx_n, y_n[i], dy_n)
-
-        # 8) расход топлива по режимам (простая модель)
-        if MethodData[0] == 8:
-            if m_fuel >= m_fuel_dva:          # режим 1
-                m_fuel -= G_raz * dt          # вычитаем расход
-                flight_mode_raz_x.append(x_r[i])  # точка для графика
-                flight_mode_raz_y.append(y_r[i])
-                result['switch_time'] = t[i]      # время возможного переключения
-            else:                              # режим 2
-                flight_mode_dva_x.append(x_r[i])
-                flight_mode_dva_y.append(y_r[i])
-                m_fuel -= G_dva * dt
-
-            m_0 = m_bch + m_fuel              # масса ракеты обновляется
-
-        # 9) запас по границе массива
-        if (i + 1 >= N_max):
-            returnCode = 4                    # превысили время
-            break
-
-        # 10) обновляем время
-        t[i + 1] = t[i] + dt
-        i += 1                                # следующий шаг
-
-    # 11) финальная подготовка результатов
-    mass_r[0] = mass_r[1]                    # сглаживаем стартовую точку
-    P_r[0] = P                               # последняя тяга
-
-    N = i + 1                                # фактическое число шагов
-
-    # записываем в словарь result
-    result['t'] = t[0:N]
-    result['Theta_r'] = Theta_r[0:N]; result['v_r'] = v_r[0:N]; result['x_r'] = x_r[0:N]; result['y_r'] = y_r[0:N]
-    result['n_xa_r'] = n_xa_r[0:N]; result['n_ya_r'] = n_ya_r[0:N]; result['P_r'] = P_r[0:N]; result['mass_r'] = mass_r[0:N]
-
-    result['Theta_c'] = Theta_c[0:N]; result['v_c'] = v_c[0:N]; result['x_c'] = x_c[0:N]; result['y_c'] = y_c[0:N]
-    result['n_xa_c'] = n_xa_c[0:N]; result['n_ya_c'] = n_ya_c[0:N]
-
-    result['Theta_n'] = Theta_n[0:N]; result['v_n'] = v_n[0:N]; result['x_n'] = x_n[0:N]; result['y_n'] = y_n[0:N]
-    result['n_xa_n'] = n_xa_n[0:N]; result['n_ya_n'] = n_ya_n[0:N];result['c_xa'] = c_xa[0:N]
-
-    # печать диагностик
-    print('Расстояние до цели:', r_rc, ' Загрузка топлива:', m_fuel_raz + m_fuel_dva)
-    if returnCode == 0:
-        print('Остаток топлива:', m_fuel, ' Нормальный mu_0', (m_start - m_bch) * mu_0 / m_start)
-
-    # возвращаем код и точки режимов для графика
-    return returnCode, flight_mode_raz_x, flight_mode_raz_y, flight_mode_dva_x, flight_mode_dva_y
-
-
-#================располагаемая перегрузка================
-class Overload:
-    def __init__(self, a :AerodynamicsModel , m: Moments, geom : Geometry, grid : FlowSetup,resistance: Optional['Resistance']=None):
-        self.a = a 
-        self.m = m
-        self.geom = geom
-        self.grid = grid
-        self.g = 9.80665
-        self.m_rocket = 146.64
-        self.G = self.g * self.m_rocket
-        self.atm = atmo() 
-        self.a_sound = 340
-        self.resistance = resistance or Resistance(self.g, self.a, self.grid, self)
-
-    def resize_array(self, arr, new_size) -> np.ndarray:
-        x_old = np.linspace(0, 1, len(arr))
-        x_new = np.linspace(0, 1, new_size)
-    # Линейная интерполяция
-        f = interpolate.interp1d(x_old, arr, kind='linear', fill_value='extrapolate')
-        return f(x_new)
-        
-
-    def n_y_ball(self) -> np.ndarray:
-
-        c_y_delta_values = self.a.compute_big_angles()
-        c_y_delta = c_y_delta_values['c_y_sum_big']
-
-        c_y_alpha = self.a.compute_c_y_sum()
-
-        m_z_alpha ,m_z_delta = self.m.test()
-
-        CalcRes = pd.DataFrame(result)
-
-        P_values = CalcRes['P_r']
-
-        P_values_new = self.resize_array(P_values, len(c_y_delta))
-
-        P_4d = P_values_new.reshape(-1, 1, 1, 1)
-
-        y= CalcRes['y_r']
-
-        y_new = self.resize_array(y, len(c_y_delta))
-
-        v_r_values = CalcRes['v_r']
-
-        v_r_values_new = self.resize_array(v_r_values, len(c_y_delta))
-
-        v_r_4d = v_r_values_new.reshape(-1, 1, 1, 1)  # (36, 1, 1, 1)
-
-        S = self.geom.S_total
-        test: float = 1000.0 
-        # Или используем np.vectorize
-        # y_values = np.vectorize(y_new)
-
-        Y_alpha = c_y_alpha * ( (self.atm.rho( test) * v_r_4d**2 * S ) / 2)
-
-        n_y_ball = 1/self.G  *  (-( m_z_delta/m_z_alpha ) * (P_4d + Y_alpha) )
-
-        return n_y_ball
-    
-    def get_n_y_rasp(self) -> np.ndarray:
-
-        info = self.n_y_ball()
-
-        return info * np.deg2rad(25)
-
-
-        
-
 
 # ========= 6) Экспорт  =========
 
@@ -2394,9 +1632,6 @@ class DataExporter:
             "c_x_data.csv": m.assemble_c_x(),
             "m_z_small.csv": m.assemble_m_z_df(),
             "polar_lilienthal.csv": m.assemble_polar_lilienthal_df(),
-            "n_y_rasp.csv": m.assemble_n_y_rasp_df(),
-            "K_quality.csv": m.assemble_K_df(),
-            
             
         }
 
@@ -2414,7 +1649,7 @@ class DataExporter:
             df.to_csv(base + fname, index=False)
 
 
-# ========= 6) Пример использования =========
+# ========= main =========
 
 if __name__ == "__main__":
     geom = Geometry()
@@ -2423,62 +1658,14 @@ if __name__ == "__main__":
     w    = AeroBDSMWrapper()
     model = AerodynamicsModel(geom, aero, grid)  # resistance создаётся внутри модели
     moments = Moments(grid, model  , geom, aero , w )
-    overload = Overload( model ,moments,geom, grid)
-    
     m_z_cy = moments.get_m_z_cy()
     print("Готово")
     print(60*'=')
     print('Запас статической устойчивости:')
     print(m_z_cy)
 
-
-# запускаем расчёт
-    ResCode, fx1, fy1, fx2, fy2 = CalcTrajectory(calcParams, inits, limits, MethodData, NRCData, result)
-    print(RC(ResCode))                     # печатаем текстовый код результата
-
-    # делаем DataFrame для удобства
-    CalcRes = pd.DataFrame(result)
-
-    # === Простая визуализация ===
-    import matplotlib.pyplot as plt
-    plt.rcParams["font.family"] = "Times New Roman"
-    plt.rcParams['font.size'] = 16
-    plt.rcParams['mathtext.fontset'] = 'custom'
-    plt.rcParams['mathtext.rm'] = "Times New Roman"
-    plt.rcParams['mathtext.it'] = "Times New Roman:italic"
-
-    # Траектории (цель и режимы ракеты)
-    fig, ax = plt.subplots()
-    ax.plot(CalcRes['x_c'], CalcRes['y_c'], color='blue', label='Цель')         # траектория цели
-    ax.plot(fx1, fy1, color='red', label='ракета 1 (режим)')                   # точки режима 1
-    ax.plot(fx2, fy2, color='orange', label='ракета 2 (режим)')                # точки режима 2
-    ax.legend(loc=2); ax.grid(True)
-    ax.set_xlabel('$X$, м'); ax.set_ylabel('$Y$, м'); ax.set_title('Траектории')
-    plt.tight_layout(); plt.show()
-
-
-        # Перегрузки ракеты
-    fig, ax = plt.subplots()
-    ax.plot(CalcRes['t'], CalcRes['n_ya_r'], color='blue', label='n_ya_r')
-    ax.plot(CalcRes['t'], CalcRes['n_xa_r'], color='red', label='n_xa_r')
-    ax.legend(loc=1); ax.set_xlabel('$t$, c'); ax.set_ylabel('$n$'); ax.grid(True); ax.set_title('Перегрузки ракеты')
-    plt.tight_layout(); plt.show()
-
-        # Тяга
-    fig, ax = plt.subplots()
-    ax.plot(CalcRes['t'], CalcRes['P_r'], color='blue')
-    ax.set_xlabel('$t$, c'); ax.set_ylabel('$P$, Н'); ax.grid(True); ax.set_title('$P_{r}$')
-    plt.tight_layout(); plt.show()
-
-    print(np.rad2deg(CalcRes['Theta_r']))
-    print(CalcRes['c_xa'])
-
-    print(overload.n_y_ball())
-
-
-
     if pd is not None:
-        exporter = DataExporter(model, include_heavy = True)
+        exporter = DataExporter(model, include_heavy = False)
         dfs = exporter.build_all()
         exporter.save_all(dfs, folder= 'data')
         print("DataFrames готовы и сохранены.")

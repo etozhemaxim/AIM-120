@@ -5,205 +5,141 @@ import numpy as np
 angles_big_deg = [-25, -20, -15, -10, 10, 15,20 , 25]
 deltas = [-25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25]
 M_values = np.arange(0.5, 4.1 , 0.1)
-# # # Чтение данных
-data = pd.read_csv('data/all_angles_data.csv')
+# # # # Чтение данных
+# data = pd.read_csv('data/all_angles_data.csv')
 
-#Функция для расчета коэффициента торможения (аналогичная C++ версии)
-def calculate_kappa_q_nos_con(M, lambda_nos):
-    # Проверка граничных условий
-    if lambda_nos < 0.7 or lambda_nos > 5.0:
-        return 1.0
+# #Функция для расчета коэффициента торможения (аналогичная C++ версии)
+# def calculate_kappa_q_nos_con(M, lambda_nos):
+#     # Проверка граничных условий
+#     if lambda_nos < 0.7 or lambda_nos > 5.0:
+#         return 1.0
     
-    # Случай дозвуковых скоростей
-    if M <= 1.0:
-        return 1.0
+#     # Случай дозвуковых скоростей
+#     if M <= 1.0:
+#         return 1.0
     
-    # Данные для M=2.0
-    lambda_values_M2 = [0.7, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
-    kappa_values_M2 = [0.95, 0.92, 0.88, 0.85, 0.82, 0.80, 0.78, 0.76, 0.75, 0.74]
+#     # Данные для M=2.0
+#     lambda_values_M2 = [0.7, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
+#     kappa_values_M2 = [0.95, 0.92, 0.88, 0.85, 0.82, 0.80, 0.78, 0.76, 0.75, 0.74]
     
-    # Интерполяция для M=2
-    kappa_at_M2 = np.interp(lambda_nos, lambda_values_M2, kappa_values_M2)
+#     # Интерполяция для M=2
+#     kappa_at_M2 = np.interp(lambda_nos, lambda_values_M2, kappa_values_M2)
     
-    # Интерполяция между M=1 и M=2
-    if M <= 2.0:
-        return 1.0 + (M - 1.0) * (kappa_at_M2 - 1.0)
-    else:
-        # Для M > 2 используем значение при M=2
-        return kappa_at_M2
+#     # Интерполяция между M=1 и M=2
+#     if M <= 2.0:
+#         return 1.0 + (M - 1.0) * (kappa_at_M2 - 1.0)
+#     else:
+#         # Для M > 2 используем значение при M=2
+#         return kappa_at_M2
 
-# Параметры фюзеляжа (должны совпадать с C++ кодом)
-l_nos = 0.47  # длина носовой части
-D = 0.178     # диаметр
-lambda_nos = l_nos / D
+# # Параметры фюзеляжа (должны совпадать с C++ кодом)
+# l_nos = 0.47  # длина носовой части
+# D = 0.178     # диаметр
+# lambda_nos = l_nos / D
 
-# # Применяем торможение потока к данным
-# data_with_kappa = data.copy()
+# # # Применяем торможение потока к данным
+# # data_with_kappa = data.copy()
 
-# # Добавляем столбец с коэффициентом торможения
-# data_with_kappa['kappa_q'] = data_with_kappa['Mach'].apply(
-#     lambda M: calculate_kappa_q_nos_con(M, lambda_nos)
-# )
+# # # Добавляем столбец с коэффициентом торможения
+# # data_with_kappa['kappa_q'] = data_with_kappa['Mach'].apply(
+# #     lambda M: calculate_kappa_q_nos_con(M, lambda_nos)
+# # )
 
-# # Применяем торможение ко всем коэффициентам подъемной силы
-# angles = [-10, -5, 0, 5, 10]
-# for angle in angles:
-#     col = f'alpha_{angle}'
-#     data_with_kappa[col + '_with_kappa'] = data_with_kappa[col] * data_with_kappa['kappa_q']
+# # # Применяем торможение ко всем коэффициентам подъемной силы
+# # angles = [-10, -5, 0, 5, 10]
+# # for angle in angles:
+# #     col = f'alpha_{angle}'
+# #     data_with_kappa[col + '_with_kappa'] = data_with_kappa[col] * data_with_kappa['kappa_q']
 
-# # Создание фигуры с двумя графиками бок о бок
-# fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
+# # # Создание фигуры с двумя графиками бок о бок
+# # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
 
-# # Цвета для графиков
-# colors = ['black', 'blue', 'green', 'orange', 'red', 'purple']
-# mach_colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'cyan', 'magenta']
+# # # Цвета для графиков
+# # colors = ['black', 'blue', 'green', 'orange', 'red', 'purple']
+# # mach_colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'cyan', 'magenta']
 
-# # ЛЕВЫЙ ГРАФИК: C_y vs M для разных α (С ТОРМОЖЕНИЕМ И БЕЗ)
-# for i, angle in enumerate(angles):
-#     col = f'alpha_{angle}'
+# # # ЛЕВЫЙ ГРАФИК: C_y vs M для разных α (С ТОРМОЖЕНИЕМ И БЕЗ)
+# # for i, angle in enumerate(angles):
+# #     col = f'alpha_{angle}'
     
-#     # Без торможения (исходные данные) - пунктирная линия
-#     ax1.plot(data['Mach'], data[col], 
-#              color=colors[i % len(colors)], 
-#              linewidth=2,
-#              linestyle='--',
-#              alpha=0.7,
-#              label=fr'$\alpha = {angle}^\circ$ (без торможения)')
+# #     # Без торможения (исходные данные) - пунктирная линия
+# #     ax1.plot(data['Mach'], data[col], 
+# #              color=colors[i % len(colors)], 
+# #              linewidth=2,
+# #              linestyle='--',
+# #              alpha=0.7,
+# #              label=fr'$\alpha = {angle}^\circ$ (без торможения)')
     
-#     # С торможением - сплошная линия
-#     ax1.plot(data_with_kappa['Mach'], data_with_kappa[col + '_with_kappa'], 
-#              color=colors[i % len(colors)], 
-#              linewidth=3,
-#              linestyle='-',
-#              label=fr'$\alpha = {angle}^\circ$ (с торможением)')
+# #     # С торможением - сплошная линия
+# #     ax1.plot(data_with_kappa['Mach'], data_with_kappa[col + '_with_kappa'], 
+# #              color=colors[i % len(colors)], 
+# #              linewidth=3,
+# #              linestyle='-',
+# #              label=fr'$\alpha = {angle}^\circ$ (с торможением)')
 
-# ax1.set_xlabel('M',fontsize=15 )
-# ax1.set_ylabel(r'$C_y\text{из.ф}$', fontsize=16)
-# ax1.grid(True, alpha=0.3)
-# ax1.legend(loc='upper right', fontsize=10)
+# # ax1.set_xlabel('M',fontsize=15 )
+# # ax1.set_ylabel(r'$C_y\text{из.ф}$', fontsize=16)
+# # ax1.grid(True, alpha=0.3)
+# # ax1.legend(loc='upper right', fontsize=10)
 
-# # ПРАВЫЙ ГРАФИК: C_y vs α для разных M (С ТОРМОЖЕНИЕМ И БЕЗ)
-# selected_mach = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
+# # # ПРАВЫЙ ГРАФИК: C_y vs α для разных M (С ТОРМОЖЕНИЕМ И БЕЗ)
+# # selected_mach = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
 
-# print(f"Выбранные числа Маха: {selected_mach}")
+# # print(f"Выбранные числа Маха: {selected_mach}")
 
-# # Строим правый график
-# for j, mach in enumerate(selected_mach):
-#     # Находим ближайшее число Маха в данных
-#     idx = (data['Mach'] - mach).abs().idxmin()
-#     closest_mach = data['Mach'].iloc[idx]
+# # # Строим правый график
+# # for j, mach in enumerate(selected_mach):
+# #     # Находим ближайшее число Маха в данных
+# #     idx = (data['Mach'] - mach).abs().idxmin()
+# #     closest_mach = data['Mach'].iloc[idx]
     
-#     # Данные без торможения
-#     mach_data = data.iloc[idx]
-#     cy_values_no_kappa = []
-#     for angle in angles:
-#         col = f'alpha_{angle}'
-#         cy_values_no_kappa.append(mach_data[col])
+# #     # Данные без торможения
+# #     mach_data = data.iloc[idx]
+# #     cy_values_no_kappa = []
+# #     for angle in angles:
+# #         col = f'alpha_{angle}'
+# #         cy_values_no_kappa.append(mach_data[col])
     
-#     # Данные с торможением
-#     mach_data_with_kappa = data_with_kappa.iloc[idx]
-#     cy_values_with_kappa = []
-#     for angle in angles:
-#         col = f'alpha_{angle}_with_kappa'
-#         cy_values_with_kappa.append(mach_data_with_kappa[col])
+# #     # Данные с торможением
+# #     mach_data_with_kappa = data_with_kappa.iloc[idx]
+# #     cy_values_with_kappa = []
+# #     for angle in angles:
+# #         col = f'alpha_{angle}_with_kappa'
+# #         cy_values_with_kappa.append(mach_data_with_kappa[col])
     
-#     # Без торможения - пунктир
-#     ax2.plot(angles, cy_values_no_kappa, 
-#              color=mach_colors[j % len(mach_colors)], 
-#              linewidth=2, 
-#              linestyle='--',
-#              alpha=0.7,
-#              marker='s',
-#              markersize=4,
-#              label=fr'$M = {mach}$ (без торможения)')
+# #     # Без торможения - пунктир
+# #     ax2.plot(angles, cy_values_no_kappa, 
+# #              color=mach_colors[j % len(mach_colors)], 
+# #              linewidth=2, 
+# #              linestyle='--',
+# #              alpha=0.7,
+# #              marker='s',
+# #              markersize=4,
+# #              label=fr'$M = {mach}$ (без торможения)')
     
-#     # С торможением - сплошная
-#     ax2.plot(angles, cy_values_with_kappa, 
-#              color=mach_colors[j % len(mach_colors)], 
-#              linewidth=3, 
-#              linestyle='-',
-#              marker='o',
-#              markersize=5,
-#              label=fr'$M = {mach}$ (с торможением)')
+# #     # С торможением - сплошная
+# #     ax2.plot(angles, cy_values_with_kappa, 
+# #              color=mach_colors[j % len(mach_colors)], 
+# #              linewidth=3, 
+# #              linestyle='-',
+# #              marker='o',
+# #              markersize=5,
+# #              label=fr'$M = {mach}$ (с торможением)')
 
-# ax2.set_xlabel('$\\alpha$' ,fontsize=16)
-# ax2.set_ylabel(r'$C_y\text{из.ф}$', fontsize=16)
-# ax2.grid(True, alpha=0.3)
-# ax2.legend(loc='upper left', fontsize=10) 
+# # ax2.set_xlabel('$\\alpha$' ,fontsize=16)
+# # ax2.set_ylabel(r'$C_y\text{из.ф}$', fontsize=16)
+# # ax2.grid(True, alpha=0.3)
+# # ax2.legend(loc='upper left', fontsize=10) 
 
-# # Добавляем линию при α = 0 для наглядности
-# ax2.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
+# # # Добавляем линию при α = 0 для наглядности
+# # ax2.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
 
-# plt.tight_layout()
-# plt.show()
+# # plt.tight_layout()
+# # plt.show()
 
-
-# Чтение данных для изолированного крыла
-data = pd.read_csv('data/krylo_isP.csv')
-
-# Создание фигуры с двумя графиками бок о бок
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
-
-# Цвета для графиков
-colors = ['black', 'blue', 'green', 'orange', 'red', 'purple']
-mach_colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'cyan', 'magenta']
-
-angles = [-10, -5, 0, 5, 10]
-
-# ЛЕВЫЙ ГРАФИК: C_y vs M для разных α
-for i, angle in enumerate(angles):
-    col = f'alpha_{angle}'
-    
-    ax1.plot(data['Mach'], data[col], 
-             color=colors[i % len(colors)], 
-             linewidth=2,
-             linestyle='-',
-             label=fr'$\alpha = {angle}^\circ$')
-
-ax1.set_xlabel('M', fontsize=15)
-ax1.set_ylabel(r'$C_y\text{из.кр}$', fontsize=16)
-ax1.grid(True, alpha=0.3)
-ax1.legend(loc='upper right', fontsize=10)
-
-# ПРАВЫЙ ГРАФИК: C_y vs α для разных M
-selected_mach = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
-
-print(f"Выбранные числа Маха: {selected_mach}")
-
-# Строим правый график
-for j, mach in enumerate(selected_mach):
-    # Находим ближайшее число Маха в данных
-    idx = (data['Mach'] - mach).abs().idxmin()
-    closest_mach = data['Mach'].iloc[idx]
-    
-    # Данные
-    mach_data = data.iloc[idx]
-    cy_values = []
-    for angle in angles:
-        col = f'alpha_{angle}'
-        cy_values.append(mach_data[col])
-    
-    ax2.plot(angles, cy_values, 
-             color=mach_colors[j % len(mach_colors)], 
-             linewidth=2, 
-             linestyle='-',
-             marker='o',
-             markersize=5,
-             label=fr'$M = {mach}$')
-
-ax2.set_xlabel('$\\alpha$', fontsize=16)
-ax2.set_ylabel(r'$C_y\text{из.кр}$', fontsize=16)
-ax2.grid(True, alpha=0.3)
-ax2.legend(loc='upper left', fontsize=10) 
-
-# Добавляем линию при α = 0 для наглядности
-ax2.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
-
-plt.tight_layout()
-plt.show()
 
 # # Чтение данных для изолированного крыла
-# data = pd.read_csv('krylo_isP_Intrf.csv')
+# data = pd.read_csv('data/krylo_isP.csv')
 
 # # Создание фигуры с двумя графиками бок о бок
 # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
@@ -265,6 +201,70 @@ plt.show()
 
 # plt.tight_layout()
 # plt.show()
+
+# # # Чтение данных для изолированного крыла
+# # data = pd.read_csv('krylo_isP_Intrf.csv')
+
+# # # Создание фигуры с двумя графиками бок о бок
+# # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
+
+# # # Цвета для графиков
+# # colors = ['black', 'blue', 'green', 'orange', 'red', 'purple']
+# # mach_colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'cyan', 'magenta']
+
+# # angles = [-10, -5, 0, 5, 10]
+
+# # # ЛЕВЫЙ ГРАФИК: C_y vs M для разных α
+# # for i, angle in enumerate(angles):
+# #     col = f'alpha_{angle}'
+    
+# #     ax1.plot(data['Mach'], data[col], 
+# #              color=colors[i % len(colors)], 
+# #              linewidth=2,
+# #              linestyle='-',
+# #              label=fr'$\alpha = {angle}^\circ$')
+
+# # ax1.set_xlabel('M', fontsize=15)
+# # ax1.set_ylabel(r'$C_y\text{из.кр}$', fontsize=16)
+# # ax1.grid(True, alpha=0.3)
+# # ax1.legend(loc='upper right', fontsize=10)
+
+# # # ПРАВЫЙ ГРАФИК: C_y vs α для разных M
+# # selected_mach = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
+
+# # print(f"Выбранные числа Маха: {selected_mach}")
+
+# # # Строим правый график
+# # for j, mach in enumerate(selected_mach):
+# #     # Находим ближайшее число Маха в данных
+# #     idx = (data['Mach'] - mach).abs().idxmin()
+# #     closest_mach = data['Mach'].iloc[idx]
+    
+# #     # Данные
+# #     mach_data = data.iloc[idx]
+# #     cy_values = []
+# #     for angle in angles:
+# #         col = f'alpha_{angle}'
+# #         cy_values.append(mach_data[col])
+    
+# #     ax2.plot(angles, cy_values, 
+# #              color=mach_colors[j % len(mach_colors)], 
+# #              linewidth=2, 
+# #              linestyle='-',
+# #              marker='o',
+# #              markersize=5,
+# #              label=fr'$M = {mach}$')
+
+# # ax2.set_xlabel('$\\alpha$', fontsize=16)
+# # ax2.set_ylabel(r'$C_y\text{из.кр}$', fontsize=16)
+# # ax2.grid(True, alpha=0.3)
+# # ax2.legend(loc='upper left', fontsize=10) 
+
+# # # Добавляем линию при α = 0 для наглядности
+# # ax2.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
+
+# # plt.tight_layout()
+# # plt.show()
 
 
 
@@ -335,68 +335,68 @@ plt.show()
 
 
 
-data = pd.read_csv('data/rul_isP.csv')
+# data = pd.read_csv('data/rul_isP.csv')
 
-# Создание фигуры с двумя графиками бок о бок
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
+# # Создание фигуры с двумя графиками бок о бок
+# fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
 
-# Цвета для графиков
-colors = ['black', 'blue', 'green', 'orange', 'red', 'purple']
-mach_colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'cyan', 'magenta']
+# # Цвета для графиков
+# colors = ['black', 'blue', 'green', 'orange', 'red', 'purple']
+# mach_colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'cyan', 'magenta']
 
-angles = [-10, -5, 0, 5, 10]
+# angles = [-10, -5, 0, 5, 10]
 
-# ЛЕВЫЙ ГРАФИК: C_y vs M для разных α
-for i, angle in enumerate(angles):
-    col = f'alpha_{angle}'
+# # ЛЕВЫЙ ГРАФИК: C_y vs M для разных α
+# for i, angle in enumerate(angles):
+#     col = f'alpha_{angle}'
     
-    ax1.plot(data['Mach'], data[col], 
-             color=colors[i % len(colors)], 
-             linewidth=2,
-             linestyle='-',
-             label=fr'$\alpha = {angle}^\circ$')
+#     ax1.plot(data['Mach'], data[col], 
+#              color=colors[i % len(colors)], 
+#              linewidth=2,
+#              linestyle='-',
+#              label=fr'$\alpha = {angle}^\circ$')
 
-ax1.set_xlabel('M', fontsize=15)
-ax1.set_ylabel(r'$C^\alpha_y\text{из.рл}$', fontsize=16)
-ax1.grid(True, alpha=0.3)
-ax1.legend(loc='upper right', fontsize=10)
+# ax1.set_xlabel('M', fontsize=15)
+# ax1.set_ylabel(r'$C^\alpha_y\text{из.рл}$', fontsize=16)
+# ax1.grid(True, alpha=0.3)
+# ax1.legend(loc='upper right', fontsize=10)
 
-# ПРАВЫЙ ГРАФИК: C_y vs α для разных M
-selected_mach = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
+# # ПРАВЫЙ ГРАФИК: C_y vs α для разных M
+# selected_mach = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
 
-print(f"Выбранные числа Маха: {selected_mach}")
+# print(f"Выбранные числа Маха: {selected_mach}")
 
-# Строим правый график
-for j, mach in enumerate(selected_mach):
-    # Находим ближайшее число Маха в данных
-    idx = (data['Mach'] - mach).abs().idxmin()
-    closest_mach = data['Mach'].iloc[idx]
+# # Строим правый график
+# for j, mach in enumerate(selected_mach):
+#     # Находим ближайшее число Маха в данных
+#     idx = (data['Mach'] - mach).abs().idxmin()
+#     closest_mach = data['Mach'].iloc[idx]
     
-    # Данные
-    mach_data = data.iloc[idx]
-    cy_values = []
-    for angle in angles:
-        col = f'alpha_{angle}'
-        cy_values.append(mach_data[col])
+#     # Данные
+#     mach_data = data.iloc[idx]
+#     cy_values = []
+#     for angle in angles:
+#         col = f'alpha_{angle}'
+#         cy_values.append(mach_data[col])
     
-    ax2.plot(angles, cy_values, 
-             color=mach_colors[j % len(mach_colors)], 
-             linewidth=2, 
-             linestyle='-',
-             marker='o',
-             markersize=5,
-             label=fr'$M = {mach}$')
+#     ax2.plot(angles, cy_values, 
+#              color=mach_colors[j % len(mach_colors)], 
+#              linewidth=2, 
+#              linestyle='-',
+#              marker='o',
+#              markersize=5,
+#              label=fr'$M = {mach}$')
 
-ax2.set_xlabel('$\\alpha$', fontsize=16)
-ax2.set_ylabel(r'$C^\alpha_y\text{из.рл}$', fontsize=16)
-ax2.grid(True, alpha=0.3)
-ax2.legend(loc='upper left', fontsize=10) 
+# ax2.set_xlabel('$\\alpha$', fontsize=16)
+# ax2.set_ylabel(r'$C^\alpha_y\text{из.рл}$', fontsize=16)
+# ax2.grid(True, alpha=0.3)
+# ax2.legend(loc='upper left', fontsize=10) 
 
-# Добавляем линию при α = 0 для наглядности
-ax2.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
+# # Добавляем линию при α = 0 для наглядности
+# ax2.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
 
-plt.tight_layout()
-plt.show()
+# plt.tight_layout()
+# plt.show()
 
 
 
@@ -800,179 +800,179 @@ plt.show()
 
 
 
-data = pd.read_csv('data/c_y_alpha_sum.csv')
+# data = pd.read_csv('data/c_y_alpha_sum.csv')
 
-# Создание фигуры с двумя графиками
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
+# # Создание фигуры с двумя графиками
+# fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
 
-# Цвета для графиков
-colors = ['black', 'blue', 'green', 'orange', 'red', 'purple']
-mach_colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'cyan', 'magenta']
+# # Цвета для графиков
+# colors = ['black', 'blue', 'green', 'orange', 'red', 'purple']
+# mach_colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'cyan', 'magenta']
 
-angles = [-10, -5, 0, 5, 10]
+# angles = [-10, -5, 0, 5, 10]
 
-# ЛЕВЫЙ ГРАФИК: c_y_alpha_sum vs M для разных α
-for i, angle in enumerate(angles):
-    col = f'alpha_{angle}'
+# # ЛЕВЫЙ ГРАФИК: c_y_alpha_sum vs M для разных α
+# for i, angle in enumerate(angles):
+#     col = f'alpha_{angle}'
     
-    ax1.plot(data['Mach'], data[col], 
-             color=colors[i % len(colors)], 
-             linewidth=2,
-             linestyle='-',
-             label=fr'$\alpha = {angle}^\circ$')
+#     ax1.plot(data['Mach'], data[col], 
+#              color=colors[i % len(colors)], 
+#              linewidth=2,
+#              linestyle='-',
+#              label=fr'$\alpha = {angle}^\circ$')
 
-ax1.set_xlabel('M', fontsize=15)
-ax1.set_ylabel(r'$c_y^{\alpha}$', fontsize=16)
-ax1.set_title(r'Зависимость $c_y^{\alpha}$ от числа Маха для разных углов атаки', fontsize=14)
-ax1.grid(True, alpha=0.3)
-ax1.legend(loc='upper right', fontsize=10)
+# ax1.set_xlabel('M', fontsize=15)
+# ax1.set_ylabel(r'$c_y^{\alpha}$', fontsize=16)
+# ax1.set_title(r'Зависимость $c_y^{\alpha}$ от числа Маха для разных углов атаки', fontsize=14)
+# ax1.grid(True, alpha=0.3)
+# ax1.legend(loc='upper right', fontsize=10)
 
-# ПРАВЫЙ ГРАФИК: c_y_alpha_sum vs α для разных M
-selected_mach = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
+# # ПРАВЫЙ ГРАФИК: c_y_alpha_sum vs α для разных M
+# selected_mach = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
 
-print(f"Выбранные числа Маха: {selected_mach}")
+# print(f"Выбранные числа Маха: {selected_mach}")
 
-# Строим правый график
-for j, mach in enumerate(selected_mach):
-    # Находим ближайшее число Маха в данных
-    idx = (data['Mach'] - mach).abs().idxmin()
-    closest_mach = data['Mach'].iloc[idx]
+# # Строим правый график
+# for j, mach in enumerate(selected_mach):
+#     # Находим ближайшее число Маха в данных
+#     idx = (data['Mach'] - mach).abs().idxmin()
+#     closest_mach = data['Mach'].iloc[idx]
     
-    # Данные для текущего числа Маха
-    mach_data = data.iloc[idx]
-    cy_values = []
-    for angle in angles:
-        col = f'alpha_{angle}'
-        cy_values.append(mach_data[col])
+#     # Данные для текущего числа Маха
+#     mach_data = data.iloc[idx]
+#     cy_values = []
+#     for angle in angles:
+#         col = f'alpha_{angle}'
+#         cy_values.append(mach_data[col])
     
-    ax2.plot(angles, cy_values, 
-             color=mach_colors[j % len(mach_colors)], 
-             linewidth=2, 
-             linestyle='-',
-             marker='o',
-             markersize=5,
-             label=fr'$M = {mach}$')
+#     ax2.plot(angles, cy_values, 
+#              color=mach_colors[j % len(mach_colors)], 
+#              linewidth=2, 
+#              linestyle='-',
+#              marker='o',
+#              markersize=5,
+#              label=fr'$M = {mach}$')
 
-ax2.set_xlabel(r'$\alpha$, град', fontsize=16)
-ax2.set_ylabel(r'$c_y^{\alpha}$', fontsize=16)
-ax2.set_title(r'Зависимость $c_y^{\alpha}$ от угла атаки для разных чисел Маха', fontsize=14)
-ax2.grid(True, alpha=0.3)
-ax2.legend(loc='upper left', fontsize=10) 
+# ax2.set_xlabel(r'$\alpha$, град', fontsize=16)
+# ax2.set_ylabel(r'$c_y^{\alpha}$', fontsize=16)
+# ax2.set_title(r'Зависимость $c_y^{\alpha}$ от угла атаки для разных чисел Маха', fontsize=14)
+# ax2.grid(True, alpha=0.3)
+# ax2.legend(loc='upper left', fontsize=10) 
 
-# Добавляем линию при α = 0 для наглядности
-ax2.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
-ax2.axvline(x=0, color='gray', linestyle='--', alpha=0.5)
+# # Добавляем линию при α = 0 для наглядности
+# ax2.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
+# ax2.axvline(x=0, color='gray', linestyle='--', alpha=0.5)
 
-plt.tight_layout()
-plt.show()
-
-
-# Чтение данных для коэффициента c_y_delta_1
-data = pd.read_csv('data/c_y_delta_1.csv')
-
-# Создание графика
-fig, ax = plt.subplots(figsize=(12, 8))
-
-# Построение графика
-ax.plot(data['Mach'], data['c_y_delta_1'], 
-        color='red', 
-        linewidth=3,
-        linestyle='-',
-        marker='o',
-        markersize=4,
-        label=r'$c_y^{\delta_1}$')
-
-# Настройки графика
-ax.set_xlabel('M', fontsize=14)
-ax.set_ylabel(r'$c_y^{\delta_1}$', fontsize=16)
-ax.set_title(r'Зависимость коэффициента $c_y^{\delta_1}$ от числа Маха', fontsize=14)
-ax.grid(True, alpha=0.3)
-ax.legend(loc='best', fontsize=12)
-
-# Добавляем линию при y=0 для наглядности
-ax.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
-
-plt.tight_layout()
-plt.show()
+# plt.tight_layout()
+# plt.show()
 
 
+# # Чтение данных для коэффициента c_y_delta_1
+# data = pd.read_csv('data/c_y_delta_1.csv')
+
+# # Создание графика
+# fig, ax = plt.subplots(figsize=(12, 8))
+
+# # Построение графика
+# ax.plot(data['Mach'], data['c_y_delta_1'], 
+#         color='red', 
+#         linewidth=3,
+#         linestyle='-',
+#         marker='o',
+#         markersize=4,
+#         label=r'$c_y^{\delta_1}$')
+
+# # Настройки графика
+# ax.set_xlabel('M', fontsize=14)
+# ax.set_ylabel(r'$c_y^{\delta_1}$', fontsize=16)
+# ax.set_title(r'Зависимость коэффициента $c_y^{\delta_1}$ от числа Маха', fontsize=14)
+# ax.grid(True, alpha=0.3)
+# ax.legend(loc='best', fontsize=12)
+
+# # Добавляем линию при y=0 для наглядности
+# ax.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
+
+# plt.tight_layout()
+# plt.show()
 
 
-data = pd.read_csv('data/c_y_delta_2.csv')
+
+
+# data = pd.read_csv('data/c_y_delta_2.csv')
     
-    # Создание графика
-fig, ax = plt.subplots(figsize=(12, 8))
+#     # Создание графика
+# fig, ax = plt.subplots(figsize=(12, 8))
     
-    # Построение графика
-ax.plot(data['Mach'], data['c_y_delta_2'], 
-            color='blue', 
-            linewidth=3,
-            linestyle='-',
-            marker='s',
-            markersize=4,
-            label=r'$c_y^{\delta_2}$')
+#     # Построение графика
+# ax.plot(data['Mach'], data['c_y_delta_2'], 
+#             color='blue', 
+#             linewidth=3,
+#             linestyle='-',
+#             marker='s',
+#             markersize=4,
+#             label=r'$c_y^{\delta_2}$')
     
-    # Настройки графика
-ax.set_xlabel('M', fontsize=14)
-ax.set_ylabel(r'$c_y^{\delta_2}$', fontsize=16)
-ax.set_title(r'Зависимость коэффициента $c_y^{\delta_2}$ от числа Маха', fontsize=14)
-ax.grid(True, alpha=0.3)
-ax.legend(loc='best', fontsize=12)
+#     # Настройки графика
+# ax.set_xlabel('M', fontsize=14)
+# ax.set_ylabel(r'$c_y^{\delta_2}$', fontsize=16)
+# ax.set_title(r'Зависимость коэффициента $c_y^{\delta_2}$ от числа Маха', fontsize=14)
+# ax.grid(True, alpha=0.3)
+# ax.legend(loc='best', fontsize=12)
     
-    # Добавляем линию при y=0 для наглядности
-ax.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
+#     # Добавляем линию при y=0 для наглядности
+# ax.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
     
-plt.tight_layout()
-plt.show()
+# plt.tight_layout()
+# plt.show()
 
 
 
-df = pd.read_csv('data/c_y_f.csv')
+# df = pd.read_csv('data/c_y_f.csv')
 
-# График 1: c_y_f от угла атаки для выбранных чисел Маха
-plt.figure(figsize=(12, 8))
+# # График 1: c_y_f от угла атаки для выбранных чисел Маха
+# plt.figure(figsize=(12, 8))
 
-for mach in selected_mach:
-    # Фильтруем данные для текущего числа Маха
-    mach_data = df[df['Mach'] == mach]
-    # Сортируем по углу атаки для красивого графика
-    mach_data = mach_data.sort_values('angle')
+# for mach in selected_mach:
+#     # Фильтруем данные для текущего числа Маха
+#     mach_data = df[df['Mach'] == mach]
+#     # Сортируем по углу атаки для красивого графика
+#     mach_data = mach_data.sort_values('angle')
     
-    plt.plot(mach_data['angle'], mach_data['c_y_f'], 
-             marker='o', linewidth=2, markersize=4, 
-             label=f'M = {mach}')
+#     plt.plot(mach_data['angle'], mach_data['c_y_f'], 
+#              marker='o', linewidth=2, markersize=4, 
+#              label=f'M = {mach}')
 
-plt.xlabel('Угол атаки, градусы')
-plt.ylabel(r'$c_\text{y.ф}$')
-plt.title(r'Коэффициент подъемной силы $c_\text{y.ф}$ в зависимости от угла атаки')
-plt.grid(True, alpha=0.3)
-plt.legend()
-plt.tight_layout()
-plt.show()
+# plt.xlabel('Угол атаки, градусы')
+# plt.ylabel(r'$c_\text{y.ф}$')
+# plt.title(r'Коэффициент подъемной силы $c_\text{y.ф}$ в зависимости от угла атаки')
+# plt.grid(True, alpha=0.3)
+# plt.legend()
+# plt.tight_layout()
+# plt.show()
 
-# График 2: c_y_f от числа Маха для разных углов атаки
-plt.figure(figsize=(12, 8))
+# # График 2: c_y_f от числа Маха для разных углов атаки
+# plt.figure(figsize=(12, 8))
 
-# Получаем уникальные углы атаки
-unique_angles = sorted(df['angle'].unique())
+# # Получаем уникальные углы атаки
+# unique_angles = sorted(df['angle'].unique())
 
-for angle in unique_angles:
-    # Фильтруем данные для текущего угла атаки
-    angle_data = df[df['angle'] == angle]
-    # Сортируем по числу Маха для красивого графика
-    angle_data = angle_data.sort_values('Mach')
+# for angle in unique_angles:
+#     # Фильтруем данные для текущего угла атаки
+#     angle_data = df[df['angle'] == angle]
+#     # Сортируем по числу Маха для красивого графика
+#     angle_data = angle_data.sort_values('Mach')
     
-    plt.plot(angle_data['Mach'], angle_data['c_y_f'], 
-             marker='s', linewidth=2, markersize=4,
-             label=f'α = {angle}°')
+#     plt.plot(angle_data['Mach'], angle_data['c_y_f'], 
+#              marker='s', linewidth=2, markersize=4,
+#              label=f'α = {angle}°')
 
-plt.xlabel('Число Маха')
-plt.ylabel(r'$c_\text{y.ф}$')
-plt.title(r'Коэффициент подъемной силы $c_\text{y.ф}$ в зависимости от числа Маха')
-plt.grid(True, alpha=0.3)
-plt.legend()
-plt.tight_layout()
-plt.show()
+# plt.xlabel('Число Маха')
+# plt.ylabel(r'$c_\text{y.ф}$')
+# plt.title(r'Коэффициент подъемной силы $c_\text{y.ф}$ в зависимости от числа Маха')
+# plt.grid(True, alpha=0.3)
+# plt.legend()
+# plt.tight_layout()
+# plt.show()
 
 
 
@@ -1004,7 +1004,7 @@ if pos_angles:
     print(f"\nГрафики для положительных углов: {pos_angles}")
     
     # Фильтруем данные для δ_II = 0 (рули не отклонены)
-    data_delta0 = data[data['delta_II_deg'] == 0]
+    data_delta0 = data[data['delta_II_deg'] == -15]
     
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
     
@@ -1017,9 +1017,9 @@ if pos_angles:
                  linewidth=2, marker='o', markersize=4,
                  label=fr'$\alpha = {alpha}^\circ$')
     
-    ax1.set_xlabel('M')
-    ax1.set_ylabel(r'$C_y$')
-    ax1.set_title(r'Зависимость $C_y$ от M ($\delta_{II} = 0^\circ$) (большие углы)')
+    ax1.set_xlabel('M', fontsize = 18)
+    ax1.set_ylabel(r'$C_y$', fontsize = 18)
+    ax1.set_title(r'Зависимость $C_y$ от M ($\delta_{II} = -15^\circ$) (большие углы)')
     ax1.grid(True, alpha=0.3)
     ax1.legend()
     ax1.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
@@ -1041,8 +1041,8 @@ if pos_angles:
                          linewidth=2, marker='s', markersize=4,
                          label=fr'$\delta_{{II}} = {delta}^\circ$')
     
-    ax2.set_xlabel('M')
-    ax2.set_ylabel(r'$C_y$')
+    ax2.set_xlabel('M', fontsize = 18)
+    ax2.set_ylabel(r'$C_y$', fontsize = 18)
     ax2.set_title(fr'Зависимость $C_y$ от M ($\alpha = {alpha_fixed}^\circ$)')
     ax2.grid(True, alpha=0.3)
     ax2.legend()
@@ -1066,9 +1066,9 @@ if neg_angles:
                  linewidth=2, marker='o', markersize=4,
                  label=fr'$\alpha = {alpha}^\circ$')
     
-    ax3.set_xlabel('M')
-    ax3.set_ylabel(r'$C_y$')
-    ax3.set_title(r'Зависимость $C_y$ от M ($\delta_{II} = 0^\circ$)')
+    ax3.set_xlabel('M', fontsize = 18)
+    ax3.set_ylabel(r'$C_y$', fontsize = 18)
+    ax3.set_title(r'Зависимость $C_y$ от M ($\delta_{II} = -15^\circ$)')
     ax3.grid(True, alpha=0.3)
     ax3.legend()
     ax3.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
@@ -1090,7 +1090,7 @@ if neg_angles:
                      label=fr'$M = {mach}$')
     
     ax4.set_xlabel(r'$\delta_{II}$, град')
-    ax4.set_ylabel(r'$C_y$')
+    ax4.set_ylabel(r'$C_y$', fontsize = 18)
     ax4.set_title(fr'Зависимость $C_y$ от $\delta_{{II}}$ ($\alpha = {alpha_fixed_neg}^\circ$)')
     ax4.grid(True, alpha=0.3)
     ax4.legend()
@@ -1101,127 +1101,127 @@ if neg_angles:
     plt.show()
 
 
-# ============================================================================
-# ВИЗУАЛИЗАЦИЯ c_y для малых углов атаки
-# ============================================================================
+# # ============================================================================
+# # ВИЗУАЛИЗАЦИЯ c_y для малых углов атаки
+# # ============================================================================
 
-print("\n" + "="*80)
-print("ВИЗУАЛИЗАЦИЯ c_y для малых углов атаки")
-print("="*80)
+# print("\n" + "="*80)
+# print("ВИЗУАЛИЗАЦИЯ c_y для малых углов атаки")
+# print("="*80)
 
-# Чтение данных
-data = pd.read_csv('data/c_y_small_angles.csv')
-print(f"\nЗагружено {len(data)} записей")
+# # Чтение данных
+# data = pd.read_csv('data/c_y_small_angles.csv')
+# print(f"\nЗагружено {len(data)} записей")
 
-# ГРАФИК 1: c_y vs M для разных углов при δ_II=0
-fig1, ax1 = plt.subplots(figsize=(12, 8))
+# # ГРАФИК 1: c_y vs M для разных углов при δ_II=0
+# fig1, ax1 = plt.subplots(figsize=(12, 8))
 
-# Фильтруем данные для δ_II = 0
-data_delta0 = data[data['delta_II_deg'] == 0]
+# # Фильтруем данные для δ_II = 0
+# data_delta0 = data[data['delta_II_deg'] == 25]
 
-# Все углы атаки
-angles_deg = sorted(data['alpha_deg'].unique())
-colors = plt.cm.rainbow(np.linspace(0, 1, len(angles_deg)))
+# # Все углы атаки
+# angles_deg = sorted(data['alpha_deg'].unique())
+# colors = plt.cm.rainbow(np.linspace(0, 1, len(angles_deg)))
 
-for i, angle in enumerate(angles_deg):
-    angle_data = data_delta0[data_delta0['alpha_deg'] == angle]
-    angle_data = angle_data.sort_values('Mach')
+# for i, angle in enumerate(angles_deg):
+#     angle_data = data_delta0[data_delta0['alpha_deg'] == angle]
+#     angle_data = angle_data.sort_values('Mach')
     
-    ax1.plot(angle_data['Mach'], angle_data['c_y'], 
-             color=colors[i], linewidth=2, marker='o', markersize=4,
-             label=fr'$\alpha = {angle}^\circ$')
+#     ax1.plot(angle_data['Mach'], angle_data['c_y'], 
+#              color=colors[i], linewidth=2, marker='o', markersize=4,
+#              label=fr'$\alpha = {angle}^\circ$')
 
-ax1.set_xlabel('M')
-ax1.set_ylabel(r'$c_y$')
-ax1.set_title(r'Зависимость $c_y$ от M ($\delta_{II} = 0^\circ$)')
-ax1.grid(True, alpha=0.3)
-ax1.legend()
-ax1.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
+# ax1.set_xlabel('M')
+# ax1.set_ylabel(r'$c_y$')
+# ax1.set_title(r'Зависимость $c_y$ от M ($\delta_{II} = 25^\circ$)')
+# ax1.grid(True, alpha=0.3)
+# ax1.legend()
+# ax1.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
 
-plt.tight_layout()
-plt.show()
+# plt.tight_layout()
+# plt.show()
 
-# ГРАФИК 2: c_y vs α для разных M при δ_II=0
-fig2, ax2 = plt.subplots(figsize=(12, 8))
+# # ГРАФИК 2: c_y vs α для разных M при δ_II=0
+# fig2, ax2 = plt.subplots(figsize=(12, 8))
 
-# Выбираем несколько чисел Маха
-selected_mach = [0.5, 1.0, 1.5, 2.0, 3.0, 4.0]
-colors_mach = plt.cm.plasma(np.linspace(0, 1, len(selected_mach)))
+# # Выбираем несколько чисел Маха
+# selected_mach = [0.5, 1.0, 1.5, 2.0, 3.0, 4.0]
+# colors_mach = plt.cm.plasma(np.linspace(0, 1, len(selected_mach)))
 
-for i, mach in enumerate(selected_mach):
-    # Фильтруем данные для данного M и δ_II=0
-    mach_data = data_delta0[np.abs(data_delta0['Mach'] - mach) < 0.05]
-    mach_data = mach_data.sort_values('alpha_deg')
+# for i, mach in enumerate(selected_mach):
+#     # Фильтруем данные для данного M и δ_II=0
+#     mach_data = data_delta0[np.abs(data_delta0['Mach'] - mach) < 0.05]
+#     mach_data = mach_data.sort_values('alpha_deg')
     
-    if not mach_data.empty:
-        ax2.plot(mach_data['alpha_deg'], mach_data['c_y'], 
-                 color=colors_mach[i], linewidth=2, marker='s', markersize=4,
-                 label=fr'$M = {mach}$')
+#     if not mach_data.empty:
+#         ax2.plot(mach_data['alpha_deg'], mach_data['c_y'], 
+#                  color=colors_mach[i], linewidth=2, marker='s', markersize=4,
+#                  label=fr'$M = {mach}$')
 
-ax2.set_xlabel(r'$\alpha$, град')
-ax2.set_ylabel(r'$c_y$')
-ax2.set_title(r'Зависимость $c_y$ от $\alpha$ ($\delta_{II} = 0^\circ$)')
-ax2.grid(True, alpha=0.3)
-ax2.legend()
-ax2.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
-ax2.axvline(x=0, color='gray', linestyle='--', alpha=0.5)
+# ax2.set_xlabel(r'$\alpha$, град')
+# ax2.set_ylabel(r'$c_y$')
+# ax2.set_title(r'Зависимость $c_y$ от $\alpha$ ($\delta_{II} = 0^\circ$)')
+# ax2.grid(True, alpha=0.3)
+# ax2.legend()
+# ax2.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
+# ax2.axvline(x=0, color='gray', linestyle='--', alpha=0.5)
 
-plt.tight_layout()
-plt.show()
+# plt.tight_layout()
+# plt.show()
 
-# ГРАФИК 3: c_y vs M для разных δ_II при α=0
-fig3, ax3 = plt.subplots(figsize=(12, 8))
+# # ГРАФИК 3: c_y vs M для разных δ_II при α=0
+# fig3, ax3 = plt.subplots(figsize=(12, 8))
 
-# Фильтруем данные для α = 0
-data_alpha0 = data[data['alpha_deg'] == 0]
+# # Фильтруем данные для α = 0
+# data_alpha0 = data[data['alpha_deg'] == 0]
 
-# Выбираем несколько дельт для отображения
-deltas_II = sorted(data['delta_II_deg'].unique())
-selected_deltas = [-25, -15, -5, 0, 5, 15, 25]  # ключевые значения
-colors_delta = plt.cm.viridis(np.linspace(0, 1, len(selected_deltas)))
+# # Выбираем несколько дельт для отображения
+# deltas_II = sorted(data['delta_II_deg'].unique())
+# selected_deltas = [-25, -15, -5, 0, 5, 15, 25]  # ключевые значения
+# colors_delta = plt.cm.viridis(np.linspace(0, 1, len(selected_deltas)))
 
-for i, delta in enumerate(selected_deltas):
-    if delta in deltas_II:
-        delta_data = data_alpha0[data_alpha0['delta_II_deg'] == delta]
-        delta_data = delta_data.sort_values('Mach')
+# for i, delta in enumerate(selected_deltas):
+#     if delta in deltas_II:
+#         delta_data = data_alpha0[data_alpha0['delta_II_deg'] == delta]
+#         delta_data = delta_data.sort_values('Mach')
         
-        if not delta_data.empty:
-            ax3.plot(delta_data['Mach'], delta_data['c_y'], 
-                     color=colors_delta[i], linewidth=2, marker='^', markersize=4,
-                     label=fr'$\delta_{{II}} = {delta}^\circ$')
+#         if not delta_data.empty:
+#             ax3.plot(delta_data['Mach'], delta_data['c_y'], 
+#                      color=colors_delta[i], linewidth=2, marker='^', markersize=4,
+#                      label=fr'$\delta_{{II}} = {delta}^\circ$')
 
-ax3.set_xlabel('M')
-ax3.set_ylabel(r'$c_y$')
-ax3.set_title(r'Зависимость $c_y$ от M ($\alpha = 0^\circ$)')
-ax3.grid(True, alpha=0.3)
-ax3.legend()
-ax3.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
+# ax3.set_xlabel('M')
+# ax3.set_ylabel(r'$c_y$')
+# ax3.set_title(r'Зависимость $c_y$ от M ($\alpha = 0^\circ$)')
+# ax3.grid(True, alpha=0.3)
+# ax3.legend()
+# ax3.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
 
-plt.tight_layout()
-plt.show()
+# plt.tight_layout()
+# plt.show()
 
-# ГРАФИК 4: c_y vs δ_II для разных M при α=0
-fig4, ax4 = plt.subplots(figsize=(12, 8))
+# # ГРАФИК 4: c_y vs δ_II для разных M при α=0
+# fig4, ax4 = plt.subplots(figsize=(12, 8))
 
-for i, mach in enumerate(selected_mach):
-    mach_data = data_alpha0[np.abs(data_alpha0['Mach'] - mach) < 0.05]
-    mach_data = mach_data.sort_values('delta_II_deg')
+# for i, mach in enumerate(selected_mach):
+#     mach_data = data_alpha0[np.abs(data_alpha0['Mach'] - mach) < 0.05]
+#     mach_data = mach_data.sort_values('delta_II_deg')
     
-    if not mach_data.empty:
-        ax4.plot(mach_data['delta_II_deg'], mach_data['c_y'], 
-                 color=colors_mach[i], linewidth=2, marker='d', markersize=4,
-                 label=fr'$M = {mach}$')
+#     if not mach_data.empty:
+#         ax4.plot(mach_data['delta_II_deg'], mach_data['c_y'], 
+#                  color=colors_mach[i], linewidth=2, marker='d', markersize=4,
+#                  label=fr'$M = {mach}$')
 
-ax4.set_xlabel(r'$\delta_{II}$, град')
-ax4.set_ylabel(r'$c_y$')
-ax4.set_title(r'Зависимость $c_y$ от $\delta_{II}$ ($\alpha = 0^\circ$)')
-ax4.grid(True, alpha=0.3)
-ax4.legend()
-ax4.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
-ax4.axvline(x=0, color='gray', linestyle='--', alpha=0.5)
+# ax4.set_xlabel(r'$\delta_{II}$, град')
+# ax4.set_ylabel(r'$c_y$')
+# ax4.set_title(r'Зависимость $c_y$ от $\delta_{II}$ ($\alpha = 0^\circ$)')
+# ax4.grid(True, alpha=0.3)
+# ax4.legend()
+# ax4.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
+# ax4.axvline(x=0, color='gray', linestyle='--', alpha=0.5)
 
-plt.tight_layout()
-plt.show()
+# plt.tight_layout()
+# plt.show()
 
 
 
@@ -1234,7 +1234,7 @@ def visualize_c_y_sum_minimal():
     data = pd.read_csv('data/c_y_sum.csv')
     
     # Фильтруем данные для нулевых отклонений
-    data_zero = data[(data['delta_I_deg'] == 0) & (data['delta_II_deg'] == 0)]
+    data_zero = data[(data['delta_I_deg'] == 0) & (data['delta_II_deg'] == -15)]
     
     # Создаем фигуру с двумя графиками
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
@@ -1252,9 +1252,9 @@ def visualize_c_y_sum_minimal():
                  linewidth=2, marker='o', markersize=4,
                  label=fr'$\alpha = {angle}^\circ$')
     
-    ax1.set_xlabel('M', fontsize=12)
-    ax1.set_ylabel(r'$C_y$', fontsize=12)
-    ax1.set_title('Зависимость $C_y$ от M при $\delta_{II}$ = 0', fontsize=12)
+    ax1.set_xlabel('M', fontsize=18)
+    ax1.set_ylabel(r'$C_y$', fontsize=18)
+    ax1.set_title('Зависимость $C_y$ от M при $\delta_{II}$ = -15', fontsize=12)
     ax1.grid(True, alpha=0.3)
     ax1.legend(fontsize=9)
     ax1.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
@@ -1273,8 +1273,8 @@ def visualize_c_y_sum_minimal():
                      linewidth=2, markersize=5,
                      label=fr'$M = {mach}$')
     
-    ax2.set_xlabel(r'$\alpha$, град', fontsize=12)
-    ax2.set_ylabel(r'$C_y^{\sum}$', fontsize=12)
+    ax2.set_xlabel(r'$\alpha$, град', fontsize=18)
+    ax2.set_ylabel(r'$C_y$', fontsize=18)
     ax2.set_title('Зависимость $C_y$ от угла атаки', fontsize=12)
     ax2.grid(True, alpha=0.3)
     ax2.legend(fontsize=9)
@@ -1320,8 +1320,8 @@ def visualize_cx_from_csv():
                  linewidth=2, marker='o', markersize=3,
                  label=fr'$\alpha={angle}^\circ$')
     
-    plt.xlabel('M')
-    plt.ylabel(r'$C_x$')
+    plt.xlabel('M', fontsize = 18)
+    plt.ylabel(r'$C_x$', fontsize = 18)
     plt.title(r'$C_x$ vs M ($\delta_{II}=0^\circ$)')
     plt.grid(True, alpha=0.3)
     plt.legend()
@@ -1345,8 +1345,8 @@ def visualize_cx_from_csv():
                      linewidth=2, markersize=4,
                      label=fr'$M={mach}$')
     
-    plt.xlabel(r'$\alpha$, град')
-    plt.ylabel(r'$C_x$')
+    plt.xlabel(r'$\alpha$, град', fontsize = 18)
+    plt.ylabel(r'$C_x$', fontsize = 18)
     plt.title(r'$C_x$ vs $\alpha$ ($\delta_{II}=0^\circ$)')
     plt.grid(True, alpha=0.3)
     plt.legend()
@@ -1406,127 +1406,127 @@ def visualize_mz_vs_alpha():
 visualize_mz_vs_alpha()
 
 
-data = pd.read_csv('data/c_y_alpha_final.csv')
+# data = pd.read_csv('data/c_y_alpha_final.csv')
 
-# Создание фигуры с двумя графиками
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
+# # Создание фигуры с двумя графиками
+# fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
 
-# Цвета для графиков
-colors = ['blue', 'red', 'green', 'orange', 'purple', 'brown', 'cyan', 'magenta']
+# # Цвета для графиков
+# colors = ['blue', 'red', 'green', 'orange', 'purple', 'brown', 'cyan', 'magenta']
 
-# ЛЕВЫЙ ГРАФИК: c_y_alpha vs M для разных α
-for i, angle in enumerate(angles_deg):
-    col = f'alpha_{angle}'
+# # ЛЕВЫЙ ГРАФИК: c_y_alpha vs M для разных α
+# for i, angle in enumerate(angles_deg):
+#     col = f'alpha_{angle}'
     
-    ax1.plot(data['Mach'], data[col], 
-             color=colors[i % len(colors)], 
-             linewidth=2,
-             linestyle='-',
-             marker='o',
-             markersize=3,
-             label=fr'$\alpha = {angle}^\circ$')
+#     ax1.plot(data['Mach'], data[col], 
+#              color=colors[i % len(colors)], 
+#              linewidth=2,
+#              linestyle='-',
+#              marker='o',
+#              markersize=3,
+#              label=fr'$\alpha = {angle}^\circ$')
 
-ax1.set_xlabel('M', fontsize=15)
-ax1.set_ylabel(r'$c_y^{\alpha}$', fontsize=16)
-ax1.set_title(r'Зависимость $c_y^{\alpha}$ от числа Маха', fontsize=14)
-ax1.grid(True, alpha=0.3)
-ax1.legend(loc='best', fontsize=12)
+# ax1.set_xlabel('M', fontsize=15)
+# ax1.set_ylabel(r'$c_y^{\alpha}$', fontsize=16)
+# ax1.set_title(r'Зависимость $c_y^{\alpha}$ от числа Маха', fontsize=14)
+# ax1.grid(True, alpha=0.3)
+# ax1.legend(loc='best', fontsize=12)
 
-# ПРАВЫЙ ГРАФИК: c_y_alpha vs α для разных M
-selected_mach = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
+# # ПРАВЫЙ ГРАФИК: c_y_alpha vs α для разных M
+# selected_mach = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
 
-# Строим правый график
-for j, mach in enumerate(selected_mach):
-    # Находим ближайшее число Маха в данных
-    idx = (data['Mach'] - mach).abs().idxmin()
-    closest_mach = data['Mach'].iloc[idx]
+# # Строим правый график
+# for j, mach in enumerate(selected_mach):
+#     # Находим ближайшее число Маха в данных
+#     idx = (data['Mach'] - mach).abs().idxmin()
+#     closest_mach = data['Mach'].iloc[idx]
     
-    # Данные для текущего числа Маха
-    mach_data = data.iloc[idx]
-    cy_values = []
-    for angle in angles:
-        col = f'alpha_{angle}'
-        cy_values.append(mach_data[col])
+#     # Данные для текущего числа Маха
+#     mach_data = data.iloc[idx]
+#     cy_values = []
+#     for angle in angles:
+#         col = f'alpha_{angle}'
+#         cy_values.append(mach_data[col])
     
-    ax2.plot(angles, cy_values, 
-             color=colors[j % len(colors)], 
-             linewidth=2, 
-             linestyle='-',
-             marker='s',
-             markersize=4,
-             label=fr'$M = {mach}$')
+#     ax2.plot(angles, cy_values, 
+#              color=colors[j % len(colors)], 
+#              linewidth=2, 
+#              linestyle='-',
+#              marker='s',
+#              markersize=4,
+#              label=fr'$M = {mach}$')
 
-ax2.set_xlabel(r'$\alpha$, град', fontsize=15)
-ax2.set_ylabel(r'$c_y^{\alpha}$', fontsize=16)
-# ax2.set_title(r'Зависимость $c_y^{\alpha}$ от угла атаки', fontsize=14)
-ax2.grid(True, alpha=0.3)
-ax2.legend(loc='best', fontsize=12)
+# ax2.set_xlabel(r'$\alpha$, град', fontsize=15)
+# ax2.set_ylabel(r'$c_y^{\alpha}$', fontsize=16)
+# # ax2.set_title(r'Зависимость $c_y^{\alpha}$ от угла атаки', fontsize=14)
+# ax2.grid(True, alpha=0.3)
+# ax2.legend(loc='best', fontsize=12)
 
-plt.tight_layout()
-plt.show()
-
-
+# plt.tight_layout()
+# plt.show()
 
 
 
-data = pd.read_csv('data/c_y_alpha_final.csv')
 
-# Создание фигуры с двумя графиками
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
 
-# Цвета для графиков
-colors = ['blue', 'red', 'green', 'orange', 'purple', 'brown', 'cyan', 'magenta']
+# data = pd.read_csv('data/c_y_alpha_final.csv')
 
-# ЛЕВЫЙ ГРАФИК: c_y_alpha vs M для разных α
-for i, angle in enumerate(angles_deg):
-    col = f'alpha_{angle}'
+# # Создание фигуры с двумя графиками
+# fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
+
+# # Цвета для графиков
+# colors = ['blue', 'red', 'green', 'orange', 'purple', 'brown', 'cyan', 'magenta']
+
+# # ЛЕВЫЙ ГРАФИК: c_y_alpha vs M для разных α
+# for i, angle in enumerate(angles_deg):
+#     col = f'alpha_{angle}'
     
-    ax1.plot(data['Mach'], data[col], 
-             color=colors[i % len(colors)], 
-             linewidth=2,
-             linestyle='-',
-             marker='o',
-             markersize=3,
-             label=fr'$\alpha = {angle}^\circ$')
+#     ax1.plot(data['Mach'], data[col], 
+#              color=colors[i % len(colors)], 
+#              linewidth=2,
+#              linestyle='-',
+#              marker='o',
+#              markersize=3,
+#              label=fr'$\alpha = {angle}^\circ$')
 
-ax1.set_xlabel('M', fontsize=15)
-ax1.set_ylabel(r'$c_y^{\alpha}$', fontsize=16)
-ax1.set_title(r'Зависимость $c_y^{\alpha}$ от числа Маха', fontsize=14)
-ax1.grid(True, alpha=0.3)
-ax1.legend(loc='best', fontsize=12)
+# ax1.set_xlabel('M', fontsize=15)
+# ax1.set_ylabel(r'$c_y^{\alpha}$', fontsize=16)
+# ax1.set_title(r'Зависимость $c_y^{\alpha}$ от числа Маха', fontsize=14)
+# ax1.grid(True, alpha=0.3)
+# ax1.legend(loc='best', fontsize=12)
 
-# ПРАВЫЙ ГРАФИК: c_y_alpha vs α для разных M
-selected_mach = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
+# # ПРАВЫЙ ГРАФИК: c_y_alpha vs α для разных M
+# selected_mach = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
 
-# Строим правый график
-for j, mach in enumerate(selected_mach):
-    # Находим ближайшее число Маха в данных
-    idx = (data['Mach'] - mach).abs().idxmin()
-    closest_mach = data['Mach'].iloc[idx]
+# # Строим правый график
+# for j, mach in enumerate(selected_mach):
+#     # Находим ближайшее число Маха в данных
+#     idx = (data['Mach'] - mach).abs().idxmin()
+#     closest_mach = data['Mach'].iloc[idx]
     
-    # Данные для текущего числа Маха
-    mach_data = data.iloc[idx]
-    cy_values = []
-    for angle in angles:
-        col = f'alpha_{angle}'
-        cy_values.append(mach_data[col])
+#     # Данные для текущего числа Маха
+#     mach_data = data.iloc[idx]
+#     cy_values = []
+#     for angle in angles:
+#         col = f'alpha_{angle}'
+#         cy_values.append(mach_data[col])
     
-    ax2.plot(angles, cy_values, 
-             color=colors[j % len(colors)], 
-             linewidth=2, 
-             linestyle='-',
-             marker='s',
-             markersize=4,
-             label=fr'$M = {mach}$')
+#     ax2.plot(angles, cy_values, 
+#              color=colors[j % len(colors)], 
+#              linewidth=2, 
+#              linestyle='-',
+#              marker='s',
+#              markersize=4,
+#              label=fr'$M = {mach}$')
 
-ax2.set_xlabel(r'$\alpha$, град', fontsize=15)
-ax2.set_ylabel(r'$c_y^{\alpha}$', fontsize=16)
-# ax2.set_title(r'Зависимость $c_y^{\alpha}$ от угла атаки', fontsize=14)
-ax2.grid(True, alpha=0.3)
-ax2.legend(loc='best', fontsize=12)
+# ax2.set_xlabel(r'$\alpha$, град', fontsize=15)
+# ax2.set_ylabel(r'$c_y^{\alpha}$', fontsize=16)
+# # ax2.set_title(r'Зависимость $c_y^{\alpha}$ от угла атаки', fontsize=14)
+# ax2.grid(True, alpha=0.3)
+# ax2.legend(loc='best', fontsize=12)
 
-plt.tight_layout()
-plt.show()
+# plt.tight_layout()
+# plt.show()
 
 
 # Вывод информации о данных

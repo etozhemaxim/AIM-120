@@ -8,7 +8,7 @@ def main():
 
     model = AerodynamicsModel(geom, aero, grid)
 
-    exporter = DataExporter(model, include_heavy=False)
+    exporter = DataExporter(model, include_heavy=True)
     dfs = exporter.build_all()
     exporter.save_all(dfs, folder= 'data')
 

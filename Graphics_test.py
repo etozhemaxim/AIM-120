@@ -418,18 +418,147 @@ def visualize_cy_vs_cx(data_path, delta_II_deg, mach):
                    fontsize=9)
     
     # Настройки графика
-    plt.xlabel('C_x')
-    plt.ylabel('C_y')
-    plt.title(f'Поляра: C_y от C_x (α>0°, δ_II={delta_II_deg}°, M={mach})')
+    plt.xlabel(r'$c_x$', fontsize = 18)
+    plt.ylabel(r'$c_y$', fontsize = 18)
+    plt.title(f'Поляра: α>0°, δII={delta_II_deg}°, M={mach}')
     plt.grid(True)
     plt.legend()
     plt.show()
 
 
+def visualize_ny_rasp_simple(data_path, delta_II=0):
+    """
+    Простая визуализация располагаемой перегрузки
+    """
+    # Загрузка данных
+    data = pd.read_csv(data_path)
+    
+    # Фильтруем для delta_I=0, delta_II=заданного
+    data = data[(data['delta_I_deg'] == 0) & (data['delta_II_deg'] == delta_II)]
+    
+    if data.empty:
+        print(f"Нет данных для delta_II={delta_II}")
+        return
+    
+    # 1. График: n_y_rasp vs M для разных alpha
+    plt.figure(figsize=(12, 5))
+    
+    # Получаем уникальные углы атаки
+    angles = sorted(data['alpha_deg'].unique())
+    
+    for alpha in angles:
+        angle_data = data[data['alpha_deg'] == alpha]
+        angle_data = angle_data.sort_values('Mach')
+        
+        plt.plot(angle_data['Mach'], angle_data['n_y_rasp'], 
+                marker='o', linewidth=2,
+                label=f'α={alpha}°')
+    
+    plt.xlabel('M')
+    plt.ylabel('n_y_rasp')
+    plt.title(f'Располагаемая перегрузка (δ_II={delta_II}°)')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+    
+    # 2. График: n_y_rasp vs alpha для разных M
+    plt.figure(figsize=(12, 5))
+    
+    # Выбираем несколько чисел Маха
+    mach_list = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
+    
+    for M in mach_list:
+        # Берем ближайшее значение M из данных
+        mach_data = data[np.abs(data['Mach'] - M) < 0.1]
+        if not mach_data.empty:
+            # Группируем по углу и усредняем
+            grouped = mach_data.groupby('alpha_deg')['n_y_rasp'].mean()
+            plt.plot(grouped.index, grouped.values, 
+                    marker='s', linewidth=2,
+                    label=f'M≈{M}')
+    
+    plt.xlabel('α, град')
+    plt.ylabel('n_y_rasp')
+    plt.title(f'Располагаемая перегрузка vs α (δ_II={delta_II}°)')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
 
+def visualize_ny_rasp_by_delta(data_path, mach_value=2.0, alpha_value=5):
+    """
+    Визуализация как меняется n_y_rasp при изменении delta_II
+    """
+    # Загрузка данных
+    data = pd.read_csv(data_path)
+    
+    # Фильтруем
+    data = data[
+        (np.abs(data['Mach'] - mach_value) < 0.1) &
+        (np.abs(data['alpha_deg'] - alpha_value) < 0.5) &
+        (data['delta_I_deg'] == 0)
+    ]
+    
+    if data.empty:
+        print(f"Нет данных для M≈{mach_value}, α≈{alpha_value}")
+        return
+    
+    # Сортируем по delta_II
+    data = data.sort_values('delta_II_deg')
+    
+    plt.figure(figsize=(10, 6))
+    plt.plot(data['delta_II_deg'], data['n_y_rasp'], 
+            marker='o', linewidth=2, markersize=8)
+    
+    plt.xlabel('δ_II, град')
+    plt.ylabel('n_y_rasp')
+    plt.title(f'n_y_rasp vs δ_II (M≈{mach_value}, α≈{alpha_value}°)')
+    plt.grid(True)
+    plt.axhline(y=0, color='gray', linestyle='--')
+    plt.axvline(x=0, color='gray', linestyle='--')
+    plt.show()
 
-
-
+def visualize_K_vs_alpha(data_path, delta_II_deg=0, mach_list=[1.0, 1.5, 2.0, 2.5]):
+    """
+    График аэродинамического качества K от угла атаки alpha
+    """
+    data = pd.read_csv(data_path)
+    
+    # Фильтруем для заданной delta_II и delta_I=0
+    filtered_data = data[
+        (data['delta_II_deg'] == delta_II_deg) &
+        (data['delta_I_deg'] == 0)
+    ]
+    
+    if filtered_data.empty:
+        print(f"Нет данных для delta_II={delta_II_deg}")
+        return
+    
+    plt.figure(figsize=(12, 8))
+    
+    colors = plt.cm.plasma(np.linspace(0, 1, len(mach_list)))
+    
+    for i, mach in enumerate(mach_list):
+        # Берем ближайшее значение M из данных
+        mach_data = filtered_data[np.abs(filtered_data['Mach'] - mach) < 0.1]
+        if not mach_data.empty:
+            # Группируем по углу и усредняем
+            grouped = mach_data.groupby('alpha_deg')['K'].mean()
+            plt.plot(grouped.index, grouped.values, 
+                    color=colors[i], 
+                    linewidth=2,
+                    marker='o',
+                    markersize=4,
+                    label=f'M≈{mach}')
+    
+    plt.xlabel(r'$\alpha$, град', fontsize=18)
+    plt.ylabel('K ', fontsize=18)
+    plt.title(f'Аэродинамическое качество K ($\delta_{{II}}={delta_II_deg}^\circ$)', fontsize=18)
+    plt.grid(True, alpha=0.3)
+    plt.legend(loc='best', fontsize=10)
+    plt.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
+    plt.axvline(x=0, color='gray', linestyle='--', alpha=0.5)
+    plt.tight_layout()
+    plt.show()
 
 # --------------------------------------------------------------------
 # 5. ГЛАВНАЯ ФУНКЦИЯ
@@ -447,47 +576,47 @@ def main():
     print("НАЧАЛО ВИЗУАЛИЗАЦИИ ДАННЫХ")
     print("=" * 80)
     
-    # # 1. Визуализация с коррекцией торможения
-    # print("\n1. Визуализация C_y с коррекцией торможения...")
-    # visualize_cy_comparison('data/all_angles_data.csv', ANGLES, LAMBDA_NOS)
+    # 1. Визуализация с коррекцией торможения
+    print("\n1. Визуализация C_y с коррекцией торможения...")
+    visualize_cy_comparison('data/all_angles_data.csv', ANGLES, LAMBDA_NOS)
     
-    # # 2. Визуализация изолированного крыла
-    # print("\n2. Визуализация изолированного крыла...")
-    # visualize_simple_cy_plots('data/krylo_isP.csv', ANGLES, r'$C_y\text{из.кр}$')
+    # 2. Визуализация изолированного крыла
+    print("\n2. Визуализация изолированного крыла...")
+    visualize_simple_cy_plots('data/krylo_isP.csv', ANGLES, r'$C_y\text{из.кр}$')
     
-    # # 3. Визуализация коэффициентов интерференции крыла
-    # print("\n3. Визуализация коэффициентов интерференции крыла...")
-    # visualize_simple_cy_plots('data/Kappa_aa_kr.csv', ANGLES, r'$K_{\alpha \alpha \text{кр}}$')
+    # 3. Визуализация коэффициентов интерференции крыла
+    print("\n3. Визуализация коэффициентов интерференции крыла...")
+    visualize_simple_cy_plots('data/Kappa_aa_kr.csv', ANGLES, r'$K_{\alpha \alpha \text{кр}}$')
     
-    # # 4. Визуализация изолированного руля
-    # print("\n4. Визуализация изолированного руля...")
-    # visualize_simple_cy_plots('data/rul_isP.csv', ANGLES, r'$C^\alpha_y\text{из.рл}$')
+    # 4. Визуализация изолированного руля
+    print("\n4. Визуализация изолированного руля...")
+    visualize_simple_cy_plots('data/rul_isP.csv', ANGLES, r'$C^\alpha_y\text{из.рл}$')
     
-    # # 5. Визуализация коэффициентов интерференции руля
-    # print("\n5. Визуализация коэффициентов интерференции руля...")
-    # visualize_simple_cy_plots('data/Kappa_aa_rl.csv', ANGLES, r'$K_{\alpha \alpha \text{рл}}$')
+    # 5. Визуализация коэффициентов интерференции руля
+    print("\n5. Визуализация коэффициентов интерференции руля...")
+    visualize_simple_cy_plots('data/Kappa_aa_rl.csv', ANGLES, r'$K_{\alpha \alpha \text{рл}}$')
     
-    # # 6. Визуализация z_b
-    # print("\n6. Визуализация z_b...")
-    # data = load_data('data/z_b_v.csv')
-    # fig, ax = plt.subplots(figsize=(12, 8))
-    # plot_single_component(ax, data, 'Mach', 'z_b', 
-    #                      color='blue', marker='s',
-    #                      xlabel='M', ylabel=r'$\bar{z}_\text{В}$',
-    #                      legend_label=r'$\bar{z}_\text{В}$')
-    # plt.tight_layout()
-    # plt.show()
+    # 6. Визуализация z_b
+    print("\n6. Визуализация z_b...")
+    data = load_data('data/z_b_v.csv')
+    fig, ax = plt.subplots(figsize=(12, 8))
+    plot_single_component(ax, data, 'Mach', 'z_b', 
+                         color='blue', marker='s',
+                         xlabel='M', ylabel=r'$\bar{z}_\text{В}$',
+                         legend_label=r'$\bar{z}_\text{В}$')
+    plt.tight_layout()
+    plt.show()
     
-    # # 7. Визуализация i_v
-    # print("\n7. Визуализация i_v...")
-    # data = load_data('data/i_v.csv')
-    # fig, ax = plt.subplots(figsize=(12, 8))
-    # plot_single_component(ax, data, 'Mach', 'i_v', 
-    #                      color='red', marker='s',
-    #                      xlabel='M', ylabel=r'$i_\text{В}$',
-    #                      legend_label=r'$i_\text{В}$')
-    # plt.tight_layout()
-    # plt.show()
+    # 7. Визуализация i_v
+    print("\n7. Визуализация i_v...")
+    data = load_data('data/i_v.csv')
+    fig, ax = plt.subplots(figsize=(12, 8))
+    plot_single_component(ax, data, 'Mach', 'i_v', 
+                         color='red', marker='s',
+                         xlabel='M', ylabel=r'$i_\text{В}$',
+                         legend_label=r'$i_\text{В}$')
+    plt.tight_layout()
+    plt.show()
     
     # # 8. Визуализация psi_eps зависимостей
     # print("\n8. Визуализация psi_eps зависимостей...")
@@ -507,47 +636,47 @@ def main():
     # plot_dependency_group(data, x_columns[8:], 'eps_alpha_sr', figsize=(20, 8), nrows=1, ncols=2)
     # plt.show()
     
-    # # 10. Визуализация kappa_q
-    # print("\n10. Визуализация коэффициента торможения...")
-    # data = load_data('data/kappa_q_nos.csv')
-    # fig, ax = plt.subplots(figsize=(12, 8))
-    # plot_single_component(ax, data, 'Mach', 'kappa_q', 
-    #                      color='blue', marker='o',
-    #                      xlabel='M', ylabel=r'$\kappa_{q \text{нос}}$',
-    #                      title=r'Зависимость $\kappa_{q \text{нос}}$ от числа Маха',
-    #                      legend_label=r'$\kappa_{q \text{нос}}$')
-    # plt.tight_layout()
-    # plt.show()
+    # 10. Визуализация kappa_q
+    print("\n10. Визуализация коэффициента торможения...")
+    data = load_data('data/kappa_q_nos.csv')
+    fig, ax = plt.subplots(figsize=(12, 8))
+    plot_single_component(ax, data, 'Mach', 'kappa_q', 
+                         color='blue', marker='o',
+                         xlabel='M', ylabel=r'$\kappa_{q \text{нос}}$',
+                         title=r'Зависимость $\kappa_{q \text{нос}}$ от числа Маха',
+                         legend_label=r'$\kappa_{q \text{нос}}$')
+    plt.tight_layout()
+    plt.show()
     
     # 11. Визуализация c_y_alpha_sum
     print("\n11. Визуализация суммарного коэффициента подъемной силы...")
     visualize_simple_cy_plots('data/c_y_alpha_sum.csv', ANGLES, r'$c_y^{\alpha}$')
     
-    # # 12. Визуализация c_y_delta_1
-    # print("\n12. Визуализация коэффициента c_y_delta_1...")
-    # data = load_data('data/c_y_delta_1.csv')
-    # fig, ax = plt.subplots(figsize=(12, 8))
-    # plot_single_component(ax, data, 'Mach', 'c_y_delta_1', 
-    #                      color='red', marker='o',
-    #                      xlabel='M', ylabel=r'$c_y^{\delta_1}$',
-    #                      title=r'Зависимость коэффициента $c_y^{\delta_1}$ от числа Маха',
-    #                      legend_label=r'$c_y^{\delta_1}$')
-    # ax.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
-    # plt.tight_layout()
-    # plt.show()
+    # 12. Визуализация c_y_delta_1
+    print("\n12. Визуализация коэффициента c_y_delta_1...")
+    data = load_data('data/c_y_delta_1.csv')
+    fig, ax = plt.subplots(figsize=(12, 8))
+    plot_single_component(ax, data, 'Mach', 'c_y_delta_1', 
+                         color='red', marker='o',
+                         xlabel='M', ylabel=r'$c_y^{\delta_1}$',
+                         title=r'Зависимость коэффициента $c_y^{\delta_1}$ от числа Маха',
+                         legend_label=r'$c_y^{\delta_1}$')
+    ax.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
+    plt.tight_layout()
+    plt.show()
     
-    # # 13. Визуализация c_y_delta_2
-    # print("\n13. Визуализация коэффициента c_y_delta_2...")
-    # data = load_data('data/c_y_delta_2.csv')
-    # fig, ax = plt.subplots(figsize=(12, 8))
-    # plot_single_component(ax, data, 'Mach', 'c_y_delta_2', 
-    #                      color='blue', marker='s',
-    #                      xlabel='M', ylabel=r'$c_y^{\delta_2}$',
-    #                      title=r'Зависимость коэффициента $c_y^{\delta_2}$ от числа Маха',
-    #                      legend_label=r'$c_y^{\delta_2}$')
-    # ax.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
-    # plt.tight_layout()
-    # plt.show()
+    # 13. Визуализация c_y_delta_2
+    print("\n13. Визуализация коэффициента c_y_delta_2...")
+    data = load_data('data/c_y_delta_2.csv')
+    fig, ax = plt.subplots(figsize=(12, 8))
+    plot_single_component(ax, data, 'Mach', 'c_y_delta_2', 
+                         color='blue', marker='s',
+                         xlabel='M', ylabel=r'$c_y^{\delta_2}$',
+                         title=r'Зависимость коэффициента $c_y^{\delta_2}$ от числа Маха',
+                         legend_label=r'$c_y^{\delta_2}$')
+    ax.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
+    plt.tight_layout()
+    plt.show()
     
     # 14. Визуализация больших углов и дельт
     print("\n14. Визуализация больших углов и дельт...")
@@ -564,6 +693,13 @@ def main():
      # 17. Простая визуализация поляры Лилиенталя
     print("\n17. Визуализация поляры Лилиенталя...")
     visualize_cy_vs_cx('data/polar_lilienthal.csv', delta_II_deg=0, mach=1.5)
+
+    # 18. Визуализация располагаемой перегрузки
+    print("\n18. Визуализация располагаемой перегрузки...")
+    visualize_ny_rasp_simple('data/n_y_rasp.csv', delta_II=0)
+
+    #19.
+    visualize_K_vs_alpha('data/K_quality.csv', delta_II_deg=0, mach_list=[1.0, 1.5, 2.0, 2.5])
     
     print("\n" + "=" * 80)
     print("ВИЗУАЛИЗАЦИЯ ЗАВЕРШЕНА")
