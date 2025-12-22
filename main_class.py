@@ -45,12 +45,24 @@ class Geometry:
 
     x_b_kr: float = 1.632 # координата начала бортовой хорды крыла (от носа) НАДО ПОМЕНЯТЬ ЭТО НЕ МОЕ ЗНАЧЕНИЕ !!!!!!!!!
     x_b_rl: float = 3.632 # координата начала бортовой хорды руля (от носа) НАДО ПОМЕНЯТЬ ЭТО НЕ МОЕ ЗНАЧЕНИЕ !!!!!!!!!
-    x_t : float = 0
+    x_t : float = -0.189
 
     chi_0 : float = 0.896
     chi_0_rl: float = 0.729
     psi : float = 0.0
 
+    #высота:
+    H : float = 0
+    P : float = 7000
+    #масса ЛА:
+    m : float= 146.64 
+    g : float = 9.80665
+
+    #для шарнирного момента
+    x_cntr_pl: float = 3.735 #центр тяжести площади консоли
+    x_OVR: float = 3.726 #расстояние от носа до оси вращения рулей
+
+    
 
     
     @property
@@ -141,9 +153,9 @@ class FlowSetup:
 
     @staticmethod
     def default() -> FlowSetup:
-        M = np.arange(0.5, 4.1, 0.1)
-        small_angles_deg = np.array([-10, -5, 0, 5, 10], dtype=float)
-        big_angles_deg = np.array([-25, -20, -15, -5,-10,0, 5,10, 15, 20, 25], dtype=float)
+        M = np.arange(0.1, 4.1, 0.1)
+        small_angles_deg = np.array([-10, -5, 0, 5, 10], dtype=float) #np.arange(-10, 10, 1, dtype=float)             np.array([-10, -5, 0, 5, 10], dtype=float)
+        big_angles_deg =  np.array([-25, -20, -15, -5,-10,0, 5,10, 15, 20, 25], dtype=float)  #np.arange(-25, 25, 1, dtype=float)             
         deltas_I_deg = np.array([0.0], dtype=float)  # крыло (пояс I)
         deltas_II_deg =  np.arange(-25, 26, 5, dtype=float)  # рули (пояс II)
         phi_alpha = np.linspace(0, 0.436332, 10)
@@ -331,12 +343,16 @@ class AerodynamicsModel:
         self.a = aero
         self.grid = grid
         self.inf = InterferenceCalculator(geom, aero)
+        self.c = 340
+        self.heights_list : list = [1000, 5000, 10000]
 
         self.lambda_Nos = self.g.l_nos / self.g.D
         self.lambda_Cil = self.g.l_f / self.g.D
         self.L_1_kr = self.a.x_b + (self.g.b_b_kr / 2.0)
         self.L_1_rl = self.a.x_b + (self.g.b_b_rl / 2.0)
         self.d_II = self.a.d_II if self.a.d_II is not None else self.g.D
+
+        self.atm = atmo()
 
         # если не передали — создаём сами, передавая self
         self.w = w or  AeroBDSMWrapper()
@@ -346,15 +362,15 @@ class AerodynamicsModel:
         self.overload = overload
 
 
-    def get_n_y_rasp(self) -> np.ndarray:
-        """Возвращает располагаемую перегрузку"""
-        if self.overload is None:
-            # Создаем временный объект
-            self.overload = Overload(self, 
-                                    Moments(self.grid, self, self.g, self.a, AeroBDSMWrapper),
-                                    self.g, 
-                                    self.grid)
-        return self.overload.get_n_y_rasp()
+    # def get_n_y_rasp(self) -> np.ndarray:
+    #     """Возвращает располагаемую перегрузку"""
+    #     if self.overload is None:
+    #         # Создаем временный объект
+    #         self.overload = Overload(self, 
+    #                                 Moments(self.grid, self, self.g, self.a, AeroBDSMWrapper),
+    #                                 self.g, 
+    #                                 self.grid)
+    #     return self.overload.get_n_y_rasp()
     # ---- AeroBDSM векторно ----
 
     def c_ya_f(self) -> np.ndarray:
@@ -724,7 +740,7 @@ class AerodynamicsModel:
                     cya_is_kr: np.ndarray, cya_is_rl: np.ndarray,
                     A_kr: np.ndarray, A_rl: np.ndarray,
                     K_aa_kr: np.ndarray, k_aa_kr: np.ndarray,
-                    K_aa_rl: np.ndarray, k_aa_rl: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+                    K_aa_rl: np.ndarray, k_aa_rl: np.ndarray) -> Tuple[np.ndarray, np.ndarray,np.ndarray]:
         """
         c_y_I — для крыла (пояс I), c_y_II — для рулей (пояс II) на больших углах.
         """
@@ -747,11 +763,12 @@ class AerodynamicsModel:
                         * np.cos(alpha) * np.cos(deltas_II)) * sqrt2 \
                 - (2.0 * c_x_0[:, None, None] * np.sin(alpha + deltas_II))
 
-        return c_y_I, c_y_II
+        return c_y_I, c_y_II , c_nII
 
     def compute_big_angles(self) -> Dict[str, np.ndarray]:
         angles = self.grid.big_angles_deg
-
+        deltas = self.grid.deltas_II_deg
+        
         intr = self.compute_interference()
         k_aa_kr, K_aa_kr = intr['k_aa_kr'], intr['K_aa_kr']   # крыло
         k_aa_rl, K_aa_rl = intr['k_aa_rl'], intr['K_aa_rl']   # рули
@@ -782,6 +799,7 @@ class AerodynamicsModel:
             self.grid.M, z_v
         )
         c_nI_mean = np.mean(c_nI0, axis=1)
+        
 
         eps_delta_sr = 1.0 * (i_v / np.maximum(z_v, 1e-12)) \
                        * (self.g.l_raszmah_kr / self.g.l_raszmah_rl) \
@@ -795,8 +813,8 @@ class AerodynamicsModel:
         alpha_eff_II = self.alpha_eff(angles, self.grid.deltas_II_deg,
                                       k_aa=k_aa_rl, k_delta_0=k_delta_0_rl, n_vals=n_vals,
                                       eps=eps_delta_sr, sqrt2=True)
-
-        c_y_I, c_y_II = self.c_y_I_II_big(alpha_eff_I, alpha_eff_II,
+        c_nII = self.c_n_from_alpha_eff(alpha_eff_II, cya_is_rl, A_rl) # рули
+        c_y_I, c_y_II , _ = self.c_y_I_II_big(alpha_eff_I, alpha_eff_II,
                                           cya_is_kr, cya_is_rl, A_kr, A_rl,
                                           K_aa_kr, k_aa_kr, K_aa_rl, k_aa_rl)
 
@@ -805,13 +823,41 @@ class AerodynamicsModel:
         c_y_sum_big = (c_y_f[:, :, None, None] * self.g.S_f_bar
                        + c_y_I[:, :, :, None]  * self.g.S_1_bar * k_aa_kr[:, None, None, None]
                        + c_y_II[:, :, None, :] * self.g.S_2_bar * k_aa_rl[:, None, None, None])
+        
+    # ---- Исправление вычисления x_F_II: согласование размерностей (M,A,DII) ----
+        _, x_F_a_II = self.moments.x_F_a_I_II(k_aa_kr, K_aa_kr, k_aa_rl, K_aa_rl)  # (M,)
+        _, _, k_d0_rl, K_d0_rl = self.compute_delta_derivatives()                  # (M,)
+        x_cntr = self.g.x_cntr_pl
+
+        angles_rad = np.deg2rad(angles)[None, :, None]             # (1,A,1)
+        deltas_rad = np.deg2rad(deltas)[None, None, :]             # (1,1,DII)
+        Kaa_rl_b = K_aa_rl[:, None, None]                          # (M,1,1)
+        Kd0_rl_b = K_d0_rl[:, None, None]                          # (M,1,1)
+        x_F_a_II_b = x_F_a_II[:, None, None]                       # (M,1,1)
+        n_b = n_vals[:, None, None]                                # (M,1,1)
+
+        denom = Kaa_rl_b * angles_rad + Kd0_rl_b * n_b * deltas_rad
+        denom_safe = np.where(np.abs(denom) < 1e-12, 1e-12, denom)
+
+        x_F_II = ((Kaa_rl_b * angles_rad * x_F_a_II_b) + (Kd0_rl_b * n_b * deltas_rad)) / denom_safe  # (M,A,DII)
+
+        _, x_Fi_II = self.moments.x_Fi_f_I_II()                    # (M,)
+        x_Fi_II_b = x_Fi_II[:, None, None]                         # (M,1,1)
+        eps = 1e-3  # подберите по месту
+        ratio = (A_rl[:, None, None] * np.sin(np.radians(alpha_eff_II))**2 * np.sign(alpha_eff_II)) / np.maximum(np.abs(c_nII), eps)
+        # опционально: ratio[ np.abs(c_nII) < eps ] = 0.0  # чтобы вовсе не добавлять взрывающуюся поправку при c_nII≈0
+        add_term = ratio * (x_cntr - x_Fi_II_b)
+        x_d_II = x_F_II + add_term
+
 
         return dict(
             c_y_f=c_y_f,
             A_kr=A_kr, A_rl=A_rl,
             alpha_eff_I=alpha_eff_I, alpha_eff_II=alpha_eff_II,
             c_y_I=c_y_I, c_y_II=c_y_II,
-            c_y_sum_big=c_y_sum_big
+            c_y_sum_big=c_y_sum_big,
+            x_d_II = x_d_II,
+            c_nII = c_nII
         )
 
     # поляра Лилиенталя
@@ -823,6 +869,115 @@ class AerodynamicsModel:
         c_x = self.resistance.c_x_tensor()
 
         return c_y ,  c_x
+    
+
+    def get_n_Y_rasp(self) -> np.ndarray:
+        """
+        Малые углы: c_y(M, alpha, delta_I, delta_II) =
+        c_y_alpha_sum(M)*alpha + c_y_delta_1(M)*delta_I + c_y_delta_2(M)*delta_II
+        Возвращает массив shape (M, A, DI, DII)
+        """
+
+        
+        alpha_bal , delta_bal = self.moments.alpha_delta_bal()
+        delta_max = np.radians([-25.0])[None, None, None, :]
+
+        h = self.g.H
+        m = self.g.m
+        g = self.g.g
+        P = self.g.P
+
+        # из модели
+        M = self.grid.M
+        alphas_rad = np.radians(self.grid.small_angles_deg)        # (A,)
+        dI_rad     = np.radians(self.grid.deltas_I_deg)            # (DI,)
+        dII_rad    = np.radians(self.grid.deltas_II_deg)           # (DII,)
+
+        # данные по производным
+        c_y_delta_1, c_y_delta_2 = self.compute_cy_delta_1_2()     # (M,), (M,)
+        c_y_alpha_sum, _ = self.compute_small_angles()              # (M,), (M,A) но берем суммарную производную
+
+        # приводим к размерностям через broadcasting
+        # (M,1,1,1)
+        cya = c_y_alpha_sum[:, None, None, None]
+        d1  = c_y_delta_1[:,   None, None, None]
+        d2  = c_y_delta_2[:,   None, None, None]
+
+        # (1,A,1,1), (1,1,DI,1), (1,1,1,DII)
+        A   = alphas_rad[None, :, None, None]
+        DI  = dI_rad[None, None, :, None]
+        DII = dII_rad[None, None, None, :]
+
+        # итог: (M,A,DI,DII)
+        c_y_sum_rasp = cya * alpha_bal + d1*DI + d2 * delta_max
+
+        Y_rasp = c_y_sum_rasp * ((self.atm.rho(h) * (M * self.c)**2)/2)
+
+        n_rasp = (Y_rasp + P * np.sin(alpha_bal) ) / (m * g)
+
+        print("cya", alpha_bal)
+
+        return n_rasp
+    
+    # 5.62 и 5.63 и 7.1
+    def get_M_sh(self) -> np.ndarray :
+        M = self.grid.M                       # (M,)
+        H = self.g.H
+        x_OVR = self.g.x_OVR
+        b_A_r = self.g.b_Ak_r
+        S = self.g.S_rl
+
+        big  = self.compute_big_angles()
+        x_d_II = big['x_d_II']                # (M, A_big, DII)
+        c_nII  = big['c_nII']                 # (M, A_big, DII)
+        kq_nos = self.kappa_q_nos()           # (M,)
+
+        # рычаг до оси вращения
+        h = x_OVR - x_d_II  
+        h = np.clip(h, -0.5, 0.5)                 # (M, A_big, DII)
+
+        # безразмерный моментный коэффициент рулей (с плечом/базой)
+        m_sh = - c_nII * (h / b_A_r)          # (M, A_big, DII)
+
+        # Динамическое давление q = 0.5 * ρ(H) * (M*c)^2: (M,)
+        q_inf = 0.001 * self.atm.rho(H) * (M * self.c)**2   # (M,)
+
+        # Приводим (M,) величины к (M,1,1) для корректного бродкастинга:
+        q_b   = q_inf[:, None, None]          # (M,1,1)
+        kq_b  = kq_nos[:, None, None]         # (M,1,1)
+
+        # Итоговый момент рулей (размерность силы*плечо, на единицу ширины базы b_A_r):
+        M_sh = q_b * m_sh * kq_b * S * b_A_r  # (M, A_big, DII)
+        
+        return M_sh
+    
+    def get_delta_c(self, heights_list: list) -> np.ndarray:
+        """
+        Самый простой вариант с векторизацией.
+        """
+        M = self.grid.M
+        
+        # Для каждой высоты в списке получаем плотность
+        rho_heights = []
+        for h in heights_list:
+            rho_heights.append(self.atm.rho(float(h)))
+        
+        rho_heights = np.array(rho_heights)
+        rho_0 = self.atm.rho(0.0)
+        
+        # Вычисляем все сразу
+        sqrt_ratio = np.sqrt(rho_0 / rho_heights)
+        Mc = M * self.c
+        
+        # Правильная размерность: (высоты, числа Маха)
+        return sqrt_ratio[:, None] * Mc[None, :]
+
+
+
+        
+
+
+
 
 
 
@@ -1149,36 +1304,33 @@ class AerodynamicsModel:
 
     def assemble_n_y_rasp_df(self, use_big_angles: bool = False) -> 'pd.DataFrame':
         """
-        Собирает данные располагаемой перегрузки в виде таблицы.
-        
-        Parameters:
-        -----------
-        use_big_angles : bool
-            Если True, использует большие углы атаки, иначе - малые
-        
-        Returns:
-        --------
-        pd.DataFrame
-            Колонки: Mach, alpha_deg, delta_I_deg, delta_II_deg, n_y_rasp
+        Собирает данные располагаемой перегрузки в виде таблицы, добавляя
+        балансировочные углы alpha_bal и delta_bal (в градусах).
+
+        Колонки: Mach, alpha_deg, delta_I_deg, delta_II_deg, n_y_rasp, alpha_bal, delta_bal
         """
         if pd is None:
             raise RuntimeError("pandas не установлен.")
-        
-        # Получаем массив с располагаемой перегрузкой
-        n_y_rasp = self.get_n_y_rasp()  # (M, A, DI, DII)
-        
-        # Выбираем, какие углы использовать
+
+        # Располагаемая перегрузка (M, A, DI, DII)
+        n_y_rasp = self.get_n_Y_rasp()
+
+        # Балансировочные углы: (M, A, 1, 1) — не зависят от DI/DII
+        alpha_bal, delta_bal = self.moments.alpha_delta_bal()
+
+        # Выбор множества углов (get_n_Y_rasp рассчитан для малых углов)
         if use_big_angles:
             angles = self.grid.big_angles_deg
             angles_name = "big"
         else:
             angles = self.grid.small_angles_deg
             angles_name = "small"
-        
-        # Создаем списки для DataFrame
-        M_list, alpha_list, delta_I_list, delta_II_list, n_y_list = [], [], [], [], []
-        
-        # Заполняем списки значениями из массива
+
+        # Списки для таблицы
+        M_list, alpha_list, delta_I_list, delta_II_list = [], [], [], []
+        n_y_list, alpha_bal_list, delta_bal_list = [], [], []
+
+        # Заполняем строки DataFrame
         for i, M in enumerate(self.grid.M):
             for ai, alpha in enumerate(angles):
                 for di, dI in enumerate(self.grid.deltas_I_deg):
@@ -1188,20 +1340,25 @@ class AerodynamicsModel:
                         delta_I_list.append(dI)
                         delta_II_list.append(dII)
                         n_y_list.append(n_y_rasp[i, ai, di, dj])
-        
-        # Создаем DataFrame
+
+                        # alpha_bal и delta_bal не зависят от DI/DII: берем индекс [i, ai, 0, 0]
+                        # Конвертируем в градусы для согласованности с остальными столбцами *_deg
+                        alpha_bal_list.append(float(np.degrees(alpha_bal[i, ai, 0, 0])))
+                        delta_bal_list.append(float(np.degrees(delta_bal[i, ai, 0, 0])))
+
         df = pd.DataFrame({
             "Mach": M_list,
             "alpha_deg": alpha_list,
             "delta_I_deg": delta_I_list,
             "delta_II_deg": delta_II_list,
-            "n_y_rasp": n_y_list
+            "n_y_rasp": n_y_list,
+            "alpha_bal": alpha_bal_list,   # в градусах
+            "delta_bal": delta_bal_list    # в градусах
         })
-        
-        # Добавляем информацию о типе углов в имя файла (опционально)
+
         df.attrs['angle_type'] = angles_name
-        
         return df
+
     
     def assemble_K_df(self, use_big_angles: bool = True) -> 'pd.DataFrame':
         """
@@ -1262,6 +1419,169 @@ class AerodynamicsModel:
         df.attrs['angle_type'] = angles_name
         
         return df
+
+
+    def assemble_n_y_rasp_2(self, use_big_angles: bool = False) -> 'pd.DataFrame':
+        """
+        Собирает данные располагаемой перегрузки в виде таблицы, добавляя
+        балансировочные углы alpha_bal и delta_bal (в градусах).
+
+        Колонки: Mach, alpha_deg, delta_I_deg, delta_II_deg, n_y_rasp, alpha_bal, delta_bal
+        """
+        if pd is None:
+            raise RuntimeError("pandas не установлен.")
+
+        # Располагаемая перегрузка (M, A, DI, DII)
+        n_y_rasp = self.get_n_Y_rasp()
+
+        # Балансировочные углы: (M, A, 1, 1) — не зависят от DI/DII
+        alpha_bal, delta_bal = self.moments.alpha_delta_bal()  # (M,1,1,D), (M,A,1,1)
+
+
+        # Выбор множества углов (get_n_Y_rasp рассчитан для малых углов)
+        if use_big_angles:
+            angles = self.grid.big_angles_deg
+            angles_name = "big"
+        else:
+            angles = self.grid.small_angles_deg
+            angles_name = "small"
+
+        # Списки для таблицы
+        M_list, alpha_list, delta_I_list, delta_II_list = [], [], [], []
+        n_y_list, alpha_bal_list, delta_bal_list = [], [], []
+
+        # Заполняем строки DataFrame
+        for i, M in enumerate(self.grid.M):
+            for ai, alpha in enumerate(angles):
+                for di, dI in enumerate(self.grid.deltas_I_deg):
+                    for dj, dII in enumerate(self.grid.deltas_II_deg):
+                        M_list.append(M)
+                        alpha_list.append(alpha)
+                        delta_I_list.append(dI)
+                        delta_II_list.append(dII)
+                        n_y_list.append(n_y_rasp[i, ai, 0, 0])
+                        alpha_bal_list.append(float(np.degrees(alpha_bal[i, ai, 0, 0])))
+                        delta_bal_list.append(float(np.degrees(delta_bal[i, ai, 0, 0])))
+
+        df = pd.DataFrame({
+            "Mach": M_list,
+            "alpha_deg": alpha_list,
+            "delta_I_deg": delta_I_list,
+            "delta_II_deg": delta_II_list,
+            "n_y_rasp": n_y_list,
+            "alpha_bal": alpha_bal_list,   # в градусах
+            "delta_bal": delta_bal_list    # в градусах
+        })
+
+        df.attrs['angle_type'] = angles_name
+        return df
+    
+    def assemble_x_Fa_f_df(self) -> 'pd.DataFrame':
+        """
+        Таблица для фокуса корпуса x_Fa_f по (5.34).
+        Возвращает DataFrame с колонками:
+        - Mach: число Маха
+        - x_Fa_f: координата фокуса корпуса (м)
+
+        Примечание: x_Fa_f вычисляется методом Moments.x_Fa_f().
+        """
+        if pd is None:
+            raise RuntimeError("pandas не установлен.")
+
+        # создаём локально Moments, чтобы получить x_Fa_f
+        moments = Moments(self.grid, self, self.g, self.a, AeroBDSMWrapper)
+
+        # x_Fa_f имеет форму (M, 1) — приведём к вектору длины len(M)
+        x_Fa_f = moments.x_Fa_f().squeeze()
+
+        # формируем DataFrame
+        df = pd.DataFrame({
+            "Mach": self.grid.M,
+            "x_Fa_f": x_Fa_f
+        })
+        return df
+    
+    def assemble_M_sh_df(self) -> 'pd.DataFrame':
+        if pd is None:
+            raise RuntimeError("pandas не установлен.")
+
+        # Compute M_sh on (M, A_big, DII)
+        M_sh = self.get_M_sh()  # (M, A_big, DII)
+
+        # Compute n_y_rasp on (M, A_small, DI, DII)
+        n_y_rasp = self.get_n_Y_rasp()  # (M, A_small, DI, DII)
+
+        # Axes
+        M_axis = self.grid.M
+        alpha_big_axis = self.grid.big_angles_deg
+        alpha_small_axis = self.grid.small_angles_deg
+        dII_axis = self.grid.deltas_II_deg
+
+        # We take DI index 0 (since deltas_I_deg is typically [0.0])
+        di_index = 0
+        if len(self.grid.deltas_I_deg) <= di_index:
+            raise ValueError("deltas_I_deg пустой или не содержит индекс 0")
+
+        # Prepare output lists
+        Mach_list, alpha_list, dII_list, n_y_list, M_sh_list = [], [], [], [], []
+
+        # For each big-angle alpha, find nearest small-angle index for n_y_rasp
+        # Precompute nearest mapping from big α to small α
+        nearest_small_idx = np.array([
+            int(np.argmin(np.abs(alpha_small_axis - a_big)))
+            for a_big in alpha_big_axis
+        ], dtype=int)
+
+        # Iterate to fill rows
+        for i, M_val in enumerate(M_axis):
+            for ai, alpha_big in enumerate(alpha_big_axis):
+                a_small_idx = nearest_small_idx[ai]
+                for dj, dII_val in enumerate(dII_axis):
+                    # M_sh value
+                    Msh_val = float(M_sh[i, ai, dj])
+                    # n_y_rasp value (mapped to nearest small alpha, DI=0)
+                    n_val = float(n_y_rasp[i, a_small_idx, di_index, dj])
+
+                    Mach_list.append(float(M_val))
+                    alpha_list.append(float(alpha_big))
+                    dII_list.append(float(dII_val))
+                    n_y_list.append(-n_val)
+                    M_sh_list.append(Msh_val)
+
+        df = pd.DataFrame({
+            "Mach": Mach_list,
+            "alpha_deg": alpha_list,
+            "delta_II_deg": dII_list,
+            "n_y_rasp": n_y_list,
+            "M_sh": M_sh_list
+        })
+        return df
+    
+    def assemble_delta_c_df(self, heights_list: list) -> 'pd.DataFrame':
+        """
+        Простой сбор данных в таблицу.
+        """
+        if pd is None:
+            raise RuntimeError("pandas не установлен.")
+        
+        heights = list(heights_list)
+        M = self.grid.M
+        
+        # Вычисляем матрицу
+        delta_c_matrix = self.get_delta_c(heights)
+        
+        # Просто собираем данные вручную
+        data = []
+        for i, h in enumerate(heights):
+            for j, m in enumerate(M):
+                data.append({
+                    "Height": h,
+                    "Mach": m,
+                    "delta_c": delta_c_matrix[i, j]
+                })
+        
+        return pd.DataFrame(data)
+
 
 
 # ========= 5) Глава IV "Лобовое сопротивление " =========
@@ -1759,9 +2079,9 @@ class Moments:
 
         # Линейные вклады: m_z = m_z0 + cy*угол*((x_t - xF)/L)
         m_z0 = 0 #как у макса шихана надо поменять потом
-        m_z_a      =  (self.model.compute_small_angles()[0][:, None, None, None] * A) * ((x_t - xFa_b)/L)
+        m_z_a      =  (self.model.compute_small_angles()[0][:, None, None, None]) * ((x_t - xFa_b)/L)
         m_z_deltaI = 0
-        m_z_deltaII= (self.model.compute_cy_delta_1_2()[1][:, None, None, None] * DII) * ((x_t - xF2_b)/L)
+        m_z_deltaII= (self.model.compute_cy_delta_1_2()[1][:, None, None, None]) * ((x_t - xF2_b)/L)
         return   m_z_a , m_z_deltaII  # (M,A,DI,DII)
     
     def get_m_z_cy(self) -> float:
@@ -1781,6 +2101,53 @@ class Moments:
         c_x  = self.resistance.c_x_tensor()
 
         return c_y / c_x
+    
+    # балансировочные альфа и дельта : 
+    def _mz_alpha_delta_derivs(self) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Производные m_z по α и по δ_II на малых углах:
+        m_zα(M) = c_yα_sum(M) * (x_t - x_Fa)/L
+        m_zδ(M) = c_yδ_II(M)   * (x_t - x_FδII)/L
+        """
+        c_y_alpha_sum, _ = self.model.compute_small_angles()   # (M,), _
+        _, c_y_delta_2   = self.model.compute_cy_delta_1_2()   # (M,), (M,)
+
+        x_Fa = self.x_Fa_f().squeeze()                         # (M,)
+        _, x_F_delta_II = self.x_F_delta_I_II()                # (M,)
+
+        x_t = self.geom.x_t
+        L   = self.geom.l_f
+
+        m_z_alpha = c_y_alpha_sum * ((x_t - x_Fa) / L)
+        m_z_delta = c_y_delta_2   * ((x_t - x_F_delta_II) / L)
+        return m_z_alpha, m_z_delta
+
+
+    #балансировочные альфа и дельта :
+    def alpha_delta_bal(self) -> Tuple[np.ndarray, np.ndarray]:
+        alpha = self.grid.small_angles_deg
+        delta = self.grid.deltas_II_deg
+
+        A   = np.radians(self.grid.small_angles_deg)[None, :, None, None]
+        DI  = np.radians(self.grid.deltas_I_deg)[None, None, :, None]
+        DII = np.radians(self.grid.deltas_II_deg)[None, None, None, :]
+
+        m_z_a , m_z_deltaII = self.test() 
+
+        delta_bal = - ( m_z_a / m_z_deltaII) * A
+
+        alpha_bal =  ( m_z_deltaII / m_z_a ) * delta_bal
+
+        print("m_z_a", m_z_a.shape, "m_z_deltaII", m_z_deltaII.shape)
+        print("A", A.shape)
+        print("delta_bal", delta_bal.shape, "alpha_bal", alpha_bal.shape)
+
+        return alpha_bal, delta_bal
+    
+
+
+
+
 
 
 
@@ -2352,11 +2719,11 @@ class Overload:
 
         return n_y_ball
     
-    def get_n_y_rasp(self) -> np.ndarray:
+    # def get_n_y_rasp(self) -> np.ndarray:
 
-        info = self.n_y_ball()
+    #     info = self.n_y_ball()
 
-        return info * np.deg2rad(25)
+    #     return info * np.deg2rad(25)
 
 
         
@@ -2394,10 +2761,11 @@ class DataExporter:
             "c_x_data.csv": m.assemble_c_x(),
             "m_z_small.csv": m.assemble_m_z_df(),
             "polar_lilienthal.csv": m.assemble_polar_lilienthal_df(),
-            "n_y_rasp.csv": m.assemble_n_y_rasp_df(),
+            "n_y_rasp.csv": m.assemble_n_y_rasp_2(),
             "K_quality.csv": m.assemble_K_df(),
-            
-            
+            "x_Fa.csv":m.assemble_x_Fa_f_df(),
+            "M_sh.csv":m.assemble_M_sh_df(),
+            "delta_c_df.csv":m.assemble_delta_c_df(self.model.heights_list)
         }
 
         if self.include_heavy:
@@ -2424,12 +2792,32 @@ if __name__ == "__main__":
     model = AerodynamicsModel(geom, aero, grid)  # resistance создаётся внутри модели
     moments = Moments(grid, model  , geom, aero , w )
     overload = Overload( model ,moments,geom, grid)
-    
-    m_z_cy = moments.get_m_z_cy()
-    print("Готово")
+
+    # b = moments.alpha_delta_bal()
+
+    print(model.get_M_sh())
+
+    # a = model.get_n_Y_rasp()
+    # print(a)
     print(60*'=')
-    print('Запас статической устойчивости:')
-    print(m_z_cy)
+    # print(np.rad2deg(b))
+
+
+    # m_z_cy = moments.get_m_z_cy()
+    # print("Готово")
+    # print(60*'=')
+    # print('Запас статической устойчивости:')
+    # print(m_z_cy)
+    # print(60*'=')
+    # print('Балансировочные углы:')
+    # alpha_bal, delta_bal = moments.alpha_delta_bal()
+    # print('Альфа:')
+    # print(alpha_bal)
+    # print('Дельта:')
+    # print(delta_bal)
+
+
+
 
 
 # запускаем расчёт
@@ -2469,13 +2857,6 @@ if __name__ == "__main__":
     ax.plot(CalcRes['t'], CalcRes['P_r'], color='blue')
     ax.set_xlabel('$t$, c'); ax.set_ylabel('$P$, Н'); ax.grid(True); ax.set_title('$P_{r}$')
     plt.tight_layout(); plt.show()
-
-    print(np.rad2deg(CalcRes['Theta_r']))
-    print(CalcRes['c_xa'])
-
-    print(overload.n_y_ball())
-
-
 
     if pd is not None:
         exporter = DataExporter(model, include_heavy = True)
