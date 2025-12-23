@@ -307,20 +307,15 @@ ax2.plot(Mach, c_x_total_passive, 'r-', linewidth=2.5, label='Пассивный
 ax2.plot(Mach, c_x_dn_new, 'g-', linewidth=2.5, label='Донное сопротивление')
 
 # Настройки графика
-ax2.set_xlabel('Число Маха (M)', fontsize=14)
-ax2.set_ylabel('Коэффициент сопротивления', fontsize=14)
-ax2.set_title('Сравнение коэффициентов сопротивления от числа Маха при α=0°', fontsize=16)
+ax2.set_xlabel('M', fontsize=40)
+ax2.set_ylabel(r'${c_{x_{0}}}$', fontsize=40 )
+ax2.set_title('Сравнение коэффициентов сопротивления от числа Маха при α=0°', fontsize=40)
 ax2.grid(True, alpha=0.3, linestyle='--')
-ax2.legend(fontsize=12, loc='best')
+ax2.legend(fontsize=25, loc='best')
 ax2.set_xlim(0, 4)
 ax2.set_ylim(bottom=0)
 
-# Добавляем пояснения
-ax2.text(0.5, 0.95, 'Разница между кривыми:\nКрасная - Синяя = Зеленая', 
-         transform=ax2.transAxes, fontsize=10,
-         verticalalignment='top', horizontalalignment='center',
-         bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
-
+ax2.tick_params(axis='both', which='major', labelsize=30)
 plt.tight_layout()
 
 plt.show()

@@ -538,7 +538,6 @@ def visualize_big_angles_delta(data_path, mach_value=None):
                     ax3.axvline(x=delta, color='lightgray', linestyle=':', alpha=0.3)
         
         plt.tight_layout()
-        plt.show()
     
     # 4. ГРАФИК: C_y vs α для ВСЕХ δ_II при ФИКСИРОВАННОМ M (ручной выбор)
     fig4, ax4 = plt.subplots(figsize=(10, 6))
@@ -577,15 +576,16 @@ def visualize_big_angles_delta(data_path, mach_value=None):
                     linestyle=linestyle,
                     label=fr'$\delta_{{II}}={delta:.0f}^\circ$')
     
-    ax4.set_xlabel(r'$\alpha$, град', fontsize=18)
-    ax4.set_ylabel(r'${c_{y_{a}}}$', fontsize=18)
-    ax4.set_title(fr' $M={fixed_mach:.1f}$', fontsize=14)
+    ax4.set_xlabel(r'$\alpha$, град', fontsize=40)
+    ax4.set_ylabel(r'${c_{y_{a}}}$', fontsize=40)
+    ax4.set_title(fr' $M={fixed_mach:.1f}$', fontsize=40)
     ax4.grid(True, alpha=0.3)
     ax4.legend(fontsize=9, title=fr'$\delta_{{II}}$, град', title_fontsize=10)
     ax4.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
     ax4.axvline(x=0, color='gray', linestyle='--', alpha=0.5)
     ax4.set_xlim(-10, 10)  # Ограничиваем диапазон по оси X от -10 до 10
-
+    ax4.tick_params(axis='both', which='major', labelsize=20)
+    plt.legend(fontsize=20)
     plt.tight_layout()
     plt.show()
    
@@ -610,16 +610,17 @@ def visualize_mz_vs_alpha(data_path, mach_value=2.0):
         delta_data = delta_data.sort_values('alpha_deg')
         
         plt.plot(delta_data['alpha_deg'], delta_data['m_z'], 
-                linewidth=2, marker='o', markersize=4,
+                linewidth=2,
                 label=fr'$\delta_{{II}}={delta}^\circ$')
     
-    plt.xlabel(r'$\alpha$, град' , fontsize  = 18)
-    plt.ylabel(r'$m_z$' , fontsize  = 18)
-    plt.title(r'$x_\text{цм}$ = 1.914 м, M=0.5', fontsize  = 18)
+    plt.xlabel(r'$\alpha$, град' , fontsize  = 40)
+    plt.ylabel(r'$m_z$' , fontsize  = 40)
+    plt.title(r'$x_\text{цм}$ = 1.914 м, M=4.0', fontsize  = 40)
     plt.grid(True, alpha=0.3)
-    plt.legend()
+    plt.legend(fontsize = 20)
     plt.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
     plt.axvline(x=0, color='gray', linestyle='--', alpha=0.5)
+    plt.tick_params(axis='both', which='major', labelsize=30)
     plt.tight_layout()
     plt.show()
 
@@ -822,11 +823,7 @@ def visualize_K_vs_alpha(data_path, delta_II_deg=0, mach_list=[3.0]):
         (data['delta_I_deg'] == 0)
     ]
     
-    # Фильтруем альфу в диапазоне -10 до 10
-    mach_data = mach_data[
-        (mach_data['alpha_deg'] >= -10) &
-        (mach_data['alpha_deg'] <= 10)
-    ]
+
     
     # Получаем все уникальные delta_II
     all_deltas = sorted(mach_data['delta_II_deg'].unique())
@@ -841,14 +838,16 @@ def visualize_K_vs_alpha(data_path, delta_II_deg=0, mach_list=[3.0]):
                     linewidth=2,
                     label=fr'$\delta_{{II}}={delta:.0f}^\circ$')
     
-    plt.xlabel(r'$\alpha$, град', fontsize=18)
-    plt.ylabel('K', fontsize=18)
-    plt.title(fr'$M={fixed_mach:.1f}$', fontsize=18)
+    plt.xlabel(r'$\alpha$, град', fontsize=40)
+    plt.ylabel('K', fontsize=40)
+    plt.title(fr'$M={fixed_mach:.1f}$', fontsize=40)
     plt.grid(True, alpha=0.3)
     plt.legend(fontsize=10, title=fr'$\delta_{{II}}$', title_fontsize=12)
     plt.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
     plt.axvline(x=0, color='gray', linestyle='--', alpha=0.5)
-    plt.xlim(-10, 10)
+    plt.xlim(-25, 25)
+    plt.legend(fontsize = 15)
+    plt.tick_params(axis='both', which='major', labelsize=30)
     plt.tight_layout()
     plt.show()
     
@@ -888,14 +887,16 @@ def visualize_balancing_params(data_path, mach_values=[0.5, 1.0, 4.0], fixed_del
                 label=f'M={mach}')
     
     # 5. Настройка первого графика
-    ax1.set_xlabel(r'$n_\text{y потр}$', fontsize = 18)
-    ax1.set_ylabel(r'$\delta_\text{бал}$, град', fontsize = 18)
+    ax1.set_xlabel(r'$n_\text{y a}$', fontsize = 30)
+    ax1.set_ylabel(r'$\delta_\text{бал}$, град', fontsize = 30)
     ax1.grid(True)
     ax1.legend()
     ax1.axhline(y=0, color='gray', linestyle='--')
     ax1.axvline(x=0, color='gray', linestyle='--')
-    plt.title(r'$x_\text{цм}$ = 1.914 м, H = 30000 м  ', fontsize=18)
+    plt.title(r'$x_\text{цм}$ = 1.914 м  ', fontsize=30)
+    ax1.tick_params(axis='both', which='major', labelsize=20)
     plt.tight_layout()
+    plt.legend(fontsize=20)
     plt.show()
 
     # 6. Создание ВТОРОГО графика
@@ -925,13 +926,15 @@ def visualize_balancing_params(data_path, mach_values=[0.5, 1.0, 4.0], fixed_del
                 label=f'M={mach}')
     
     # 8. Настройка второго графика
-    ax2.set_xlabel(r'$n_\text{y потр}$', fontsize=16)
-    ax2.set_ylabel(r'$\alpha_\text{бал}$, град', fontsize=16)
+    ax2.set_xlabel(r'$n_\text{y a}$', fontsize=30)
+    ax2.set_ylabel(r'$\alpha_\text{бал}$, град', fontsize=30)
     ax2.grid(True)
     ax2.legend()
     ax2.axhline(y=0, color='gray', linestyle='--')
     ax2.axvline(x=0, color='gray', linestyle='--')
-    plt.title(r'$x_\text{цм}$ = 1.914 м, H = 30000 м  ', fontsize=18)
+    ax2.tick_params(axis='both', which='major', labelsize=20)
+    plt.title(r'$x_\text{цм}$ = 1.914 м ', fontsize=30)
+    plt.legend(fontsize=20)
     plt.tight_layout()
     plt.show()
 
@@ -975,19 +978,19 @@ def plot_mach_curves(filename, alpha, delta, mach_list):
             # Рисуем линию и точки
             plt.plot(mach_data['n_y_rasp'], mach_data['M_sh'], 
                     linewidth=2, 
-                    label=f'Mach = {target_mach}')
+                    label=f'M = {target_mach}' )
     
     # 5. Добавляем линии осей
     plt.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
     plt.axvline(x=0, color='gray', linestyle='--', alpha=0.5)
     
     # 6. Настраиваем график
-    plt.xlabel(r'$n_\text{y потр}$', fontsize=18)
-    plt.ylabel(r'$M_\text{ш}$', fontsize=18)
-    plt.title(r'$x_\text{цм}$ = 1.914 м, H = 30000 м  ', fontsize=18)
+    plt.xlabel(r'$n_\text{y a}$', fontsize=30)
+    plt.ylabel(r'$M_\text{ш}$', fontsize=30)
+    plt.title(r'$x_\text{цм}$ = 1.914 м', fontsize=30)
     plt.grid(True, alpha=0.3)
-    plt.legend()
-    
+    plt.legend(fontsize=20)
+    plt.tick_params(axis='both', which='major', labelsize=20)
     # 7. Показываем график
     plt.tight_layout()
     plt.show()
@@ -1150,14 +1153,14 @@ def main():
     # plt.show()
     
     # 14. Визуализация больших углов и дельт
-    # print("\n14. Визуализация больших углов и дельт...")
-    # visualize_big_angles_delta('data/c_y_sum_big_delta.csv', 4.0)
+    print("\n14. Визуализация больших углов и дельт...")
+    visualize_big_angles_delta('data/c_y_sum_big_delta.csv', 4.0)
 
     # visualize_small_angles_delta('data/c_y_small_angles.csv')
     
 #     #####15. Визуализация момента m_z
-#     print("\n15. Визуализация момента m_z...")
-#     visualize_mz_vs_alpha('data/m_z_small.csv', mach_value=1.5)
+    # print("\n15. Визуализация момента m_z...")
+    visualize_mz_vs_alpha('data/m_z_small.csv', mach_value=4.0)
     
 #     # # 16. Визуализация итогового c_y_alpha
 #     # print("\n16. Визуализация итогового c_y_alpha...")
@@ -1172,16 +1175,16 @@ def main():
 #     visualize_ny_rasp_simple('data/n_y_rasp.csv', delta_II=0)
 
     # #19.
-    visualize_K_vs_alpha('data/K_quality.csv', delta_II_deg=25, mach_list=[0.5, 1.5, 3.0])
+    visualize_K_vs_alpha('data/K_quality.csv', delta_II_deg=0, mach_list=[0.5, 1.5, 4.0])
     
-#     # #21
-#     visualize_balancing_params('data/n_y_rasp_test.csv', mach_values=[0.5, 1.5, 4.0], fixed_delta_II_deg=-5, fixed_alpha_deg=-5)
+    # # #21
+    # visualize_balancing_params('data/n_y_rasp_test.csv', mach_values=[0.5, 1.5, 4.0], fixed_delta_II_deg=-5, fixed_alpha_deg=-5)
 
-    #22
-    # Загружаем данные из CSV файла
-    visualize_x_Fa_f_simple_reversed('data/x_Fa.csv')  # Предполагаю, что файл имеет расширение .csv
+    # #22
+    # # Загружаем данные из CSV файла
+    # visualize_x_Fa_f_simple_reversed('data/x_Fa.csv')  # Предполагаю, что файл имеет расширение .csv
 
-#     #22
+#     # 22
 #     plot_mach_curves(
 #     filename='data/M_sh.csv',
 #     alpha=5,        # фиксированный угол атаки
